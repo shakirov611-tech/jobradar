@@ -44,3 +44,8 @@ Remote evidence и main/unclear/excluded реализованы только д�
 Генерация резюме и автоотклики входят в core scope. Сейчас не вводим Kubernetes, микросервисы,
 массовый scraping LinkedIn, LLM scoring без benchmark и billing без pilot evidence.
 Старые JR-ID сохранены для трассировки; исторические редакции доступны в Git.
+
+## Уточнение приоритета: CI перед MATCH-01
+
+По решению пользователя сначала усилены автоматические проверки: ESLint, JSON/config contracts и PR CI.
+[Инструкция и ограничения](../operations/ci.md). Реальный n8n/Sheets остаётся локальной проверкой; обязательность checks через branch ruleset отдельно не настроена. Затем возвращаемся к MATCH-01.

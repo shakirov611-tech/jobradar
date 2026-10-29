@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   normalization:
-    name: Normalization tests
+    name: Quality checks
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -29,5 +29,14 @@ jobs:
           node-version: '22'
           package-manager-cache: false
 
-      - name: Run regression tests
-        run: node --test tests/*.test.cjs
+      - name: Install pinned development dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Static analysis
+        run: npm run lint
+
+      - name: Validate JSON and configuration contracts
+        run: npm run check:config
+
+      - name: Unit and fixture integration tests (no live services)
+        run: npm test
