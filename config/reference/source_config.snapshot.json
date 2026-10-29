@@ -1,0 +1,17 @@
+{
+  "version": "0.1",
+  "timezone": "Europe/Sofia",
+  "schedule": {"collection_local": "09:00", "recheck_local": "12:00", "daily_digest_local": "09:30"},
+  "job_title_queries": ["Senior Product Manager", "Product Lead", "Product Owner", "Growth Product Manager", "Monetization Product Manager", "Senior Project Manager", "Delivery Manager"],
+  "keywords_positive": ["remote", "Bulgaria", "Europe", "EMEA", "Russian", "русский", "SaaS", "marketplace", "subscription", "monetization", "streaming"],
+  "sources": [
+    {"id": "linkedin_alerts", "type": "email_alert", "enabled": false, "setup": "Create LinkedIn job alerts then connect Gmail credential in n8n; labels configured manually"},
+    {"id": "hh", "type": "official_api", "enabled": false, "setup": "Review current API terms/auth, configure credentials and pagination"},
+    {"id": "greenhouse", "type": "public_ats", "enabled": false, "companies": [], "url_template": "https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs?content=true"},
+    {"id": "lever", "type": "public_ats", "enabled": false, "companies": [], "url_template": "https://api.lever.co/v0/postings/{site}?mode=json"},
+    {"id": "ashby", "type": "public_ats", "enabled": false, "companies": [], "url_template": "https://api.ashbyhq.com/posting-api/job-board/{board}"}
+  ],
+  "active_status": ["active_confirmed", "unverified", "closed_confirmed", "check_error"],
+  "processing": {"dedup_order": ["source_id", "canonical_url", "company_and_title_fingerprint"], "do_not_mark_closed_on_network_error": true, "require_verifiable_source": true},
+  "scoring": {"functional_fit": 30, "remote_geography": 25, "language": 20, "ownership": 15, "domain_salary": 10, "priority_a_min": 80, "priority_b_min": 65}
+}

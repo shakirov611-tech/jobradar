@@ -1,0 +1,30 @@
+{
+  "version": "0.1-example",
+  "location": "Example City",
+  "work_mode": "remote_full_time",
+  "remote_hiring_country_required": "BG",
+  "target_roles": [
+    {
+      "family": "product",
+      "titles": [
+        "Product Manager"
+      ],
+      "search_priority": 1
+    }
+  ],
+  "preferred_languages": [
+    "Russian",
+    "English"
+  ],
+  "salary_target_eur_monthly": {
+    "min": null,
+    "max": null,
+    "basis": "to_clarify_net_or_gross",
+    "exclude_when_undisclosed": false
+  },
+  "unknown_is_not_rejection": [
+    "salary",
+    "language",
+    "hiring geography"
+  ]
+}

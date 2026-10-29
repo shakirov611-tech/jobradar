@@ -1,0 +1,15 @@
+# Private state
+.env
+.env.*
+!.env.example
+config/private/
+backups/
+exports-private/
+*.sqlite
+*.sqlite-*
+*.db
+*.log
+credentials*.json
+node_modules/
+__pycache__/
+.DS_Store
