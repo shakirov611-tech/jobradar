@@ -59,3 +59,18 @@ node --test tests/normalization-baseline.test.cjs
 ## first_seen v0.4
 
 Подготовлен TEST workflow с чтением хранилища: новые вакансии получают first_seen_at, существующие сохраняют исходную дату или пустое значение. [Правила и локальная проверка](docs/operations/first-seen-v0.4.md). Нормализатор отдельно first_seen не создаёт. Интеграционный тест v0.4 ожидает проверки first-seen-created и first-seen-preserved. Backup/restore отложен пользователем и не блокирует текущую правку; локальный production workflow автоматически не обновлялся.
+
+### Автосбор v0.5 (Windows)
+
+После обновления файлов, сохранив `.env.integration`, из Windows PowerShell:
+
+```powershell
+npm.cmd run collector:automate
+```
+
+Сначала проверяет новый pipeline на тестовой таблице, затем включает сбор каждые
+3 часа (первый — примерно через минуту). ПК, Docker/n8n и сессия Windows нужны для
+работы. Не запускайте старый collector через Execute параллельно.
+Результат: `npm.cmd run collector:status`; остановка расписания:
+`npm.cmd run collector:schedule:remove`.
+[Полная инструкция и восстановление после ошибки](docs/operations/scheduled-collector-v0.5.md).

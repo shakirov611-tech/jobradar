@@ -1,6 +1,6 @@
 {
   "name": "jobradar",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "engines": {
     "node": ">=22"
@@ -9,6 +9,12 @@
     "test": "node --test tests/*.test.cjs",
     "test:integration": "node --env-file=.env.integration scripts/test-integration.cjs",
     "workflow:build": "node scripts/build-workflow.cjs && node scripts/build-first-seen-workflow.cjs",
-    "collector:setup": "node --env-file=.env.integration scripts/deploy-collector.cjs"
+    "collector:setup": "node --env-file=.env.integration scripts/deploy-collector.cjs",
+    "collector:run": "node --env-file=.env.integration scripts/run-collector.cjs",
+    "collector:test": "node --env-file=.env.integration scripts/run-collector.cjs --test",
+    "collector:status": "node scripts/run-collector.cjs --status",
+    "collector:automate": "node --env-file=.env.integration scripts/collector-schedule.cjs install",
+    "collector:schedule:status": "node scripts/collector-schedule.cjs status",
+    "collector:schedule:remove": "node scripts/collector-schedule.cjs remove"
   }
 }
