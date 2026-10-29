@@ -28,3 +28,21 @@
 
 ## Уточнение scope и evidence E6
 JR-001: экспорт/JS/узлы/mapping получены, остаются runtime version, headers и local regression. Резюме, autofill и автоотклики включены в core scope и больше не относятся к откладываемым функциям. Их реализация следует за baseline gate: technical spike канала → подтверждённые факты и документы → assisted → automatic selected list → rules-based selection. Gmail sync отдельно необязателен.
+
+## Актуальный implementation срез 2026-10-29, v0.5
+
+Эта таблица уточняет первоначальные To do выше, которые отражают исторический аудит.
+
+| Область | Статус / evidence |
+|---|---|
+| Runtime baseline | n8n 2.45.5, local Docker; исходный workflow сохранён |
+| Backup/restore (JR-002) | Отложен пользователем до infrastructure update / второго пользователя |
+| Нормализация (JR-006) | Код и регрессионные тесты в Git, CI включён |
+| Повторные записи (JR-004) | v0.4 подтверждён пользователем в тестовой и рабочей таблицах |
+| Настройка collector | v0.4 автоматический импорт/Sheets wiring подтверждён пользователем |
+| Ошибки/наблюдаемость (JR-005/008) | v0.5: reports, counts, last success, пустой результат, timeout, lock; локальные тесты пройдены, новый runtime pending |
+| Расписание | v0.5: task каждые 3 часа, test-first installer; Windows/runtime pending |
+| Auto-apply канал | Следующая продуктовая техническая проверка по согласованному плану, до реализации отправок |
+
+Остаются ограничения нормализации: текущий title regex, отсутствие геофильтра,
+entity-encoded description, ручная оценка полноты upstream. Они не исправлены v0.5.

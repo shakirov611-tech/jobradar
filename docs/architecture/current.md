@@ -40,3 +40,16 @@ flowchart TD
 ## Эксплуатационные ограничения
 
 Сбор зависит от работающего ПК, Docker, сети и сна Windows. restart: unless-stopped не решает сон устройства. Europe/Sofia — timezone конфигурации, timestamp для обмена хранить с offset/UTC. Наличие schedule в JSON не доказывает activation trigger. Рабочий источник настроек до JR-003 неизвестен.
+
+## Срез v0.5 — 2026-10-29
+
+v0.4 проверен пользователем на реальных n8n 2.45.5 и рабочей Google Sheets:
+повторные запуски без дублей, last_seen обновляется, first_seen сохраняется.
+first_seen создаётся только для новых ID, исторические пустые значения не заполняются.
+
+В v0.5 добавлен локальный Windows Task Scheduler → Node runner с эксклюзивным
+файловым lock → временный webhook workflow n8n → текущий Greenhouse/Sheets pipeline.
+Пустой результат получает явное подтверждение. Отчёт содержит runId, этапы, время,
+счётчики и исход; неизвестный результат удерживает lock. Облако не обращается к localhost.
+Docker остаётся прежним. Это реализовано, но новый runtime путь ещё требует локальной
+проверки; [инструкция](../operations/scheduled-collector-v0.5.md), [ADR 007](../adr/007-local-scheduled-writer.md).

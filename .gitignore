@@ -15,3 +15,6 @@ __pycache__/
 .DS_Store
 .test-artifacts/
 !.env.integration.example
+
+# Local collector reports and persistent concurrency lock
+.collector-state/
