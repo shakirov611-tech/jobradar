@@ -211,3 +211,10 @@ receipt binding и unknown/no-repeat tests. API submission без employer key �
 для выбранной candidate-side конфигурации. Greenhouse hosted browser form — кандидат
 для следующего spike. Stage B не закрыт: реальный browser upload/submit и подтверждение
 работодателя ещё не проверены. [Матрица и инструкция](../research/application-channel-spike.md).
+
+### APP-01, browser iteration 2
+
+[Browser evidence](../research/browser-dry-run.md): наблюдён Airbnb wrapper и iframe,
+добавлены Chromium fixture tests и dry-run network guard с запретом live writes.
+Live DOM inspection не равен выполнению guard runner, live upload или Submit.
+Stage B не закрыт; collector не требует обновления/переустановки ради browser spike.

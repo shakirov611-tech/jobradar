@@ -1,0 +1,25 @@
+name: Browser fixture tests
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: browser-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  controlled-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - run: npm ci --prefix browser --ignore-scripts --no-audit --no-fund
+      - run: node browser/node_modules/playwright/cli.js install --with-deps chromium --only-shell
+      - run: npm run test:browser

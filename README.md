@@ -81,3 +81,12 @@ npm.cmd run collector:automate
 после отправки на локальной HTTP fixture. Ключей и n8n не требует, работодателям не пишет.
 Read-only требования Greenhouse: `npm.cmd run applications:inspect -- BOARD_TOKEN JOB_POST_ID`.
 Реальные автоотклики пока не реализованы. [Результаты и границы spike](docs/research/application-channel-spike.md).
+
+### Browser spike (опционально)
+
+Playwright изолирован в browser/, обычный collector от него не зависит.
+`npm.cmd run browser:setup` устанавливает закреплённые dependencies и Chromium;
+`npm.cmd run test:browser` проверяет локальную форму в браузере. Отдельный GitHub job
+делает это автоматически. Live dry run: `npm.cmd run applications:browser:dry-run` —
+только синтетические данные, без Submit, live POST заблокированы. Выбор файла не означает
+его приём ATS. [Evidence и ограничения](docs/research/browser-dry-run.md).

@@ -17,6 +17,9 @@
     "collector:schedule:status": "node scripts/collector-schedule.cjs status",
     "collector:schedule:remove": "node scripts/collector-schedule.cjs remove",
     "test:applications": "node --test tests/application-spike.test.cjs",
-    "applications:inspect": "node scripts/inspect-application.cjs"
+    "applications:inspect": "node scripts/inspect-application.cjs",
+    "browser:setup": "npm ci --prefix browser --ignore-scripts --no-audit --no-fund && node browser/node_modules/playwright/cli.js install chromium --only-shell",
+    "test:browser": "node --test browser/tests/*.test.cjs",
+    "applications:browser:dry-run": "node scripts/browser-dry-run.cjs"
   }
 }

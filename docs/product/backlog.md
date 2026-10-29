@@ -56,3 +56,11 @@ entity-encoded description, ручная оценка полноты upstream. �
   browser channel, upload и разрешённый Submit — To do; epic не закрыт.
 - DATA-01: durable package/approval/attempt state обязателен до реальных отправок;
   in-memory test prototype не переносить в production adapter.
+
+## APP-01 — browser iteration 2
+
+Добавлены отдельные Playwright fixture tests и узкий guarded dry-run runner.
+Живой DOM Airbnb wrapper + Greenhouse iframe проверен облачным браузером;
+реальные поля не заполнялись, upload и Submit не выполнялись. Browser tests выполняет
+отдельный CI job; Chromium download в локальной shell-среде недоступен.
+Stage B остаётся открытым до live fill/upload/confirmation в разрешённом сценарии.
