@@ -81,3 +81,11 @@ geography status/reason/workMode, unknown workAuthorization/teamLanguage. Это
 поля не пишутся. Source completion хранит total, matched, roleReview, geography buckets,
 inserted/updated и passed/failed. Run outcome может быть partial: успешные boards
 записаны, неизвестные источники не интерпретируются как empty или closed.
+
+## Work-mode evidence v0.6.1
+
+Local geography дополнена visibility (main/unclear/excluded), formatReason,
+evidence {source,snippet}, countryEvidence. Snippets получены из нормализованного текста,
+не являются оригинальным HTML. Source summary содержит views counts только для role
+candidates; matched остаётся прежним role-prefilter count. Writer payload полей CRM
+не расширяется. Work authorization и язык команды по-прежнему unknown.

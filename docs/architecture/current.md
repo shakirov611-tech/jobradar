@@ -74,3 +74,10 @@ Read phase и write phase защищены прежним локальным loc
 сохранены. География/reasons — в локальном HTML/JSON каталоге, новых Sheets колонок нет.
 Legacy v0.5 runner сохранён; browser/application spike не включается в поиск/отклики.
 [ADR 010](../adr/010-multi-source-catalog.md), [операции](../operations/multi-source-v0.6.md).
+
+## v0.6.1 — remote evidence и основной view
+
+Description-aware work mode policy remote-evidence-v1 добавляет main/unclear/excluded
+и короткое evidence к локальному каталогу. Основной HTML view требует подтверждённого
+remote без выявленных country restrictions. Ролевой writer и историческая CRM сохранены;
+это не фильтрация last_seen/закрытие записей. [ADR 011](../adr/011-confirmed-remote-main-view.md).

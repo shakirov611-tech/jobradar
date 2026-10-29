@@ -48,7 +48,7 @@ async function runMulti(env,options={}) {
   const fixture=test?fixtures(runId):null;
   const sources=fixture?validateSources({version:1,sources:fixture.sources}):configured.sources;
   collection=await collectSources(sources,configured.profile,{fetchImpl:options.sourceFetchImpl,loadFeed:fixture?.loadFeed,sleep:options.sleep});
-  report.sourceResults=collection.sources;report.policy={role:configured.profile.rolePolicy,geographyCountry:configured.profile.country,geographyExcludesFromCRM:false};
+  report.sourceResults=collection.sources;report.policy={workMode:'remote-evidence-v1',role:configured.profile.rolePolicy,geographyCountry:configured.profile.country,geographyExcludesFromCRM:false};
   const dir=options.dir||require('./run-collector.cjs').STATE;
   const catalogFile=runId+'.catalog.json';fs.writeFileSync(path.join(dir,catalogFile),JSON.stringify({observedAt:collection.observedAt,sources:collection.sources,catalog:collection.catalog},null,2)+'\n');report.catalogFile=catalogFile;
   const html=require('../src/reports/catalog-preview.cjs').renderCatalog(collection);fs.writeFileSync(path.join(dir,runId+'.catalog.html'),html);fs.writeFileSync(path.join(dir,'preview.html'),html);report.previewFile='preview.html';
