@@ -1,0 +1,20 @@
+{
+  "observedDate": "2026-10-29",
+  "channel": "cloud browser read-only DOM inspection",
+  "jobId": "8262207",
+  "title": "Product Manager, API Platform",
+  "finalPublicUrl": "https://careers.airbnb.com/positions/8262207/?gh_jid=8262207",
+  "wrapperTab": "Application",
+  "frameSelector": "#grnhse_iframe",
+  "frameOrigin": "https://job-boards.greenhouse.io",
+  "temporaryFrameUrlSaved": false,
+  "observedStandardTextFields": ["First Name", "Last Name", "Email"],
+  "resumeGroup": "Resume/CV*",
+  "fileControlsInResumeGroup": 1,
+  "customRequiredQuestionsObserved": true,
+  "fieldsFilled": false,
+  "fileSelected": false,
+  "fileUploaded": false,
+  "applicationSubmitted": false,
+  "limitations": "DOM evidence only. Playwright dry-run guard was not executed in this cloud-browser session."
+}
