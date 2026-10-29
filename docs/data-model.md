@@ -89,3 +89,11 @@ evidence {source,snippet}, countryEvidence. Snippets получены из но�
 не являются оригинальным HTML. Source summary содержит views counts только для role
 candidates; matched остаётся прежним role-prefilter count. Writer payload полей CRM
 не расширяется. Work authorization и язык команды по-прежнему unknown.
+
+## Personal matching v0.7.0
+
+search-profile.json сохраняет version=1; optional matching содержит policy, primaryRoles/secondaryRoles, preferredSeniority, preferredTeamLanguages, remoteOnly=true. Старый профиль без matching работает с unconfigured/review.
+
+В catalog добавлены matching {policy,decision,family,seniority,languages,reasons,gaps,unknowns,exclusions}, reviewText (до 12000 символов), reviewTextTruncated и descriptionHash (SHA-256 нормализованного текста анализа до 120000 символов). Языковой сигнал хранит тип team/requirement и evidence; язык текста не является языком команды. Не подменяет прежнее geography.teamLanguage=unknown подтверждённым фактом.
+
+Review snapshot хранит profile/fingerprint, policy, observedAt, sourceResults и records с contentHash; snapshotId — SHA-256 содержимого. Labels schemaVersion=1 с snapshotId, profileFingerprint, policy, answers {vacancy_id,contentHash,label,reason}. label: suitable/unsuitable/uncertain, reason до 500 символов. Чужие/повторные/устаревшие ответы отклоняются. Результат содержит матрицу решений, unlabeled/uncertain отдельно; это не population accuracy. Эти поля не пишутся в Sheets.

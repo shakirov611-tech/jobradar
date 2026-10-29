@@ -1,11 +1,12 @@
 const fs=require('node:fs');const path=require('node:path');
 const {validateSources,collectSources}=require('../src/sources/catalog.cjs');
+const {validateProfile}=require('../src/matching/profile.cjs');
 const {buildScheduledWorkflow}=require('./scheduled-workflow.cjs');
 function settings(env) {
  const root=path.resolve(__dirname,'..');
  const config=JSON.parse(fs.readFileSync(env.JR_SOURCES_FILE||path.join(root,'config/sources.json'),'utf8'));
  const profile=JSON.parse(fs.readFileSync(env.JR_SEARCH_PROFILE_FILE||path.join(root,'config/search-profile.json'),'utf8'));
- if(profile.version!==1||profile.country!=='BG'||typeof profile.remotePreferred!=='boolean'||profile.rolePolicy!=='product-growth-delivery-v1'||profile.unknownPolicy!=='review'||profile.languagePolicy!=='do_not_infer_team_language_from_job_text')throw new Error('JR_INVALID_SEARCH_PROFILE');
+ validateProfile(profile);
  return {sources:validateSources(config),profile};
 }
 // Self-contained: embed the same validation in the n8n Code node.
@@ -48,9 +49,9 @@ async function runMulti(env,options={}) {
   const fixture=test?fixtures(runId):null;
   const sources=fixture?validateSources({version:1,sources:fixture.sources}):configured.sources;
   collection=await collectSources(sources,configured.profile,{fetchImpl:options.sourceFetchImpl,loadFeed:fixture?.loadFeed,sleep:options.sleep});
-  report.sourceResults=collection.sources;report.policy={workMode:'remote-evidence-v1',role:configured.profile.rolePolicy,geographyCountry:configured.profile.country,geographyExcludesFromCRM:false};
+  report.sourceResults=collection.sources;report.policy={workMode:'remote-evidence-v1',role:configured.profile.rolePolicy,geographyCountry:configured.profile.country,geographyExcludesFromCRM:false,matching:configured.profile.matching?.policy||'unconfigured',profileFingerprint:collection.profileFingerprint};
   const dir=options.dir||require('./run-collector.cjs').STATE;
-  const catalogFile=runId+'.catalog.json';fs.writeFileSync(path.join(dir,catalogFile),JSON.stringify({observedAt:collection.observedAt,sources:collection.sources,catalog:collection.catalog},null,2)+'\n');report.catalogFile=catalogFile;
+  const catalogFile=runId+'.catalog.json';fs.writeFileSync(path.join(dir,catalogFile),JSON.stringify({observedAt:collection.observedAt,profile:collection.profile,profileFingerprint:collection.profileFingerprint,sources:collection.sources,catalog:collection.catalog},null,2)+'\n');report.catalogFile=catalogFile;
   const html=require('../src/reports/catalog-preview.cjs').renderCatalog(collection);fs.writeFileSync(path.join(dir,runId+'.catalog.html'),html);fs.writeFileSync(path.join(dir,'preview.html'),html);report.previewFile='preview.html';
   if(!collection.sources.some(s=>s.status==='passed'))throw new Error('JR_ALL_SOURCES_FAILED');
   if(Buffer.byteLength(JSON.stringify(collection.rows),'utf8')>8*1024*1024)throw new Error('JR_COLLECTION_PAYLOAD_LIMIT');
