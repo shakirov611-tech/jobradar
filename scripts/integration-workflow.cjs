@@ -1,3 +1,4 @@
+const {prepareVacancyUpsert}=require('../src/storage/prepare-vacancy-upsert.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
 function validateConfig(env) {
@@ -33,19 +34,21 @@ function buildWorkflow(config, runId) {
     parameters.sheetName={__rl:true,mode:'name',value:config.sheet};
     parameters.operation=operation;
     if(operation==='read') {delete parameters.columns;parameters.options={};}
-    add(name,template.type,parameters,{typeVersion:template.typeVersion,credentials:{googleSheetsOAuth2Api:{id:config.credential,name:'JobRadar integration credential'}},...(operation==='read'?{alwaysOutputData:true}:{})});
+    add(name,template.type,parameters,{typeVersion:template.typeVersion,credentials:{googleSheetsOAuth2Api:{id:config.credential,name:'JobRadar integration credential'}},...(operation==='read'?{alwaysOutputData:true,executeOnce:true}:{})});
   };
   const normalize=(input)=>`const normalize = function($input) {\n${source}\n};\nreturn normalize({first:()=>({json:${JSON.stringify(input)}})});`;
   add('Start','n8n-nodes-base.webhook',{httpMethod:'POST',path:'jobradar-test-'+runId,responseMode:'lastNode',responseData:'firstEntryJson',options:{}},{webhookId:runId});
   sheet('Read test tab','read');
   code('Guard test tab',`for(const item of $input.all()) {const row=item.json;if(Object.keys(row).length && row.vacancy_id && (row.company!=='JobRadar TEST' || !String(row.original_url||'').startsWith('https://example.test/'))) throw new Error('Non-test rows found: refusing to write');} return [{json:{ok:true}}];`);
   code('Normalize first',normalize(fixture));
-  code('Seed manual fields',`return $input.all().map(item=>({json:{...item.json,first_seen_at:'2026-01-01T00:00:00.000Z',notes:'KEEP-${runId}',review_status:'saved'}}));`);
+  code('Prepare first insert',`const incoming=$('Normalize first').all().map(x=>x.json);const existing=$('Read test tab').all().map(x=>x.json);return (${prepareVacancyUpsert.toString()})(incoming,existing).map(json=>({json}));`);
+  code('Seed manual fields',`return $input.all().map(item=>({json:{...item.json,notes:'KEEP-${runId}',review_status:'saved'}}));`);
   sheet('First upsert','appendOrUpdate');
   sheet('Read first result','read');
-  code('Assert insert',`const rows=$input.all().map(x=>x.json).filter(x=>x.vacancy_id===${JSON.stringify(vacancyId)});if(rows.length!==1)throw new Error('Insert did not create exactly one row');return [{json:rows[0]}];`);
+  code('Assert insert',`const rows=$input.all().map(x=>x.json).filter(x=>x.vacancy_id===${JSON.stringify(vacancyId)});if(rows.length!==1)throw new Error('Insert did not create exactly one row');if(!rows[0].first_seen_at || rows[0].first_seen_at!==rows[0].last_seen_at)throw new Error('New first_seen_at must equal initial observation time');return [{json:rows[0]}];`);
   fixture.jobs[0].title='Senior Product Manager';
   code('Normalize update',normalize(fixture));
+  code('Prepare existing update',`const incoming=$('Normalize update').all().map(x=>x.json);const existing=$('Read first result').all().map(x=>x.json);return (${prepareVacancyUpsert.toString()})(incoming,existing).map(json=>({json}));`);
   sheet('Repeated upsert','appendOrUpdate');
   sheet('Read final result','read');
   code('Assert result',`const rows=$input.all().map(x=>x.json).filter(x=>x.vacancy_id===${JSON.stringify(vacancyId)});
@@ -55,7 +58,7 @@ if(row.title!=='Senior Product Manager')throw new Error('Machine field not updat
 if(row.notes!==${JSON.stringify('KEEP-'+runId)} || row.review_status!=='saved')throw new Error('Manual fields overwritten');
 if(row.first_seen_at!==first.first_seen_at)throw new Error('first_seen_at overwritten');
 if(!(Date.parse(row.last_seen_at)>Date.parse(first.last_seen_at)))throw new Error('last_seen_at did not advance');
-return [{json:{ok:true,checks:['insert','dedup','update','manual-fields','existing-first-seen','last-seen'],runId:${JSON.stringify(runId)}}}];`);
+return [{json:{ok:true,checks:['insert','dedup','update','manual-fields','first-seen-created','first-seen-preserved','last-seen'],runId:${JSON.stringify(runId)}}}];`);
   return {name:'JR TEST '+runId,nodes,connections,settings:{executionOrder:'v1',saveDataSuccessExecution:'none',saveDataErrorExecution:'none',executionTimeout:120}};
 }
 module.exports={validateConfig,buildWorkflow};
