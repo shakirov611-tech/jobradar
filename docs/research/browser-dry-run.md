@@ -99,3 +99,10 @@ immutable package, review и durable application state. Нынешний dry run
 [network](https://playwright.dev/docs/network),
 [BrowserContext](https://playwright.dev/docs/api/class-browsercontext),
 [browser installation](https://playwright.dev/docs/browsers).
+
+## CI evidence
+
+Первая browser suite успешно прошла в Chromium на GitHub Actions:
+[run 40875283916](https://github.com/shakirov611-tech/jobradar/actions/runs/40875283916).
+Проверены все четыре сценария выше. Это подтверждает fixture browser path;
+не является доказательством выполнения live runner на форме работодателя.

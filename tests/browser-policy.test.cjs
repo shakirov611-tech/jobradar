@@ -5,7 +5,7 @@ test('live browser policy permits known HTTPS reads but denies writes and arbitr
  for(const [method,url] of [['POST','https://job-boards.greenhouse.io/upload'],['GET','http://job-boards.greenhouse.io'],['GET','https://evil.greenhouse.io'],['DELETE','https://careers.airbnb.com']])assert.equal(requestAllowed(method,url),false);
 });
 test('fixture policy permits only same-origin upload POST, never application or exfiltration',()=>{
- const origin='http://127.0.0.1:1234';assert.equal(requestAllowed('POST',origin+'/fixture/upload',origin),true);
+ const origin='http://127.0.0.1:1234';assert.equal(requestAllowed('GET',origin+'/fixture/apply',origin),false);assert.equal(requestAllowed('POST',origin+'/fixture/upload',origin),true);
  for(const url of [origin+'/fixture/apply',origin+'/fixture/upload?submit=1','http://127.0.0.1:9999/fixture/upload','https://job-boards.greenhouse.io/fixture/upload'])assert.equal(requestAllowed('POST',url,origin),false);
 });
 test('live entry targets reject arbitrary URLs, credentials and session query strings',()=>{

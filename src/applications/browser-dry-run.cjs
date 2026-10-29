@@ -11,7 +11,7 @@ function validateTarget(value) {
 function requestAllowed(method,value,fixtureOrigin) {
   const url=new URL(value);
   if(fixtureOrigin) {
-    if(url.origin!==fixtureOrigin)return false;
+    if(url.origin!==fixtureOrigin||url.pathname==='/fixture/apply')return false;
     return ['GET','HEAD'].includes(method)||(method==='POST'&&url.pathname==='/fixture/upload'&&!url.search);
   }
   if(!['GET','HEAD'].includes(method)||url.protocol!=='https:'||url.port||url.username||url.password)return false;
