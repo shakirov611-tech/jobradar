@@ -64,3 +64,12 @@ entity-encoded description, ручная оценка полноты upstream. �
 реальные поля не заполнялись, upload и Submit не выполнялись. Browser tests выполняет
 отдельный CI job; Chromium download в локальной shell-среде недоступен.
 Stage B остаётся открытым до live fill/upload/confirmation в разрешённом сценарии.
+
+## Новое решение пользователя — качество и покрытие перед следующим application spike
+
+SRC-02/часть MATCH-01 подняты в текущий приоритет. v0.6: source registry, Greenhouse/Lever
+read adapters, role policy v1, geography annotations BG, HTML/JSON аудит каталога и
+per-source completion. Локальный новый n8n writer gate — pending пользовательский test.
+Остаются To do: 20–30 пользовательских relevance labels, seniority/языки/домен/зарплата,
+региональные источники за пределами отдельного company board, semantic dedup по должности.
+APP-01 live fill/upload отложен по приоритету, не отменён. Backup deferral сохраняется.

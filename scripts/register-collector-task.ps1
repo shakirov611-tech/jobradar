@@ -20,7 +20,7 @@ $runner=Join-Path $ProjectRoot 'scripts\run-collector.cjs'
 $arguments='"--env-file='+$envFile+'" "'+$runner+'"'
 $action=New-ScheduledTaskAction -Execute $NodePath -Argument $arguments -WorkingDirectory $ProjectRoot
 $trigger=New-ScheduledTaskTrigger -Once -At ((Get-Date).AddMinutes(1)) -RepetitionInterval (New-TimeSpan -Hours 3)
-$settings=New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 10) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
+$settings=New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 15) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
 $user=[System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 $principal=New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited
 Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Description 'JobRadar local collection every 3 hours; reports in .collector-state' -Force | Out-Null

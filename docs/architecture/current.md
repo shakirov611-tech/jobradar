@@ -64,3 +64,13 @@ Docker остаётся прежним. Это реализовано, но но
 APP-01 добавляет изолированное чтение требований формы и controlled HTTP fixture.
 Никакой application worker не включён в scheduled collector, реальная отправка
 к работодателю не реализована. [Evidence и ограничения](../research/application-channel-spike.md).
+
+## v0.6 — source expansion после пользовательского пересмотра приоритета
+
+Source registry → два Node read adapters (Greenhouse/Lever) → role/geography policy →
+объединённый payload → один temporary n8n writer → прежняя Google Sheets CRM.
+Read phase и write phase защищены прежним локальным lock. Failure одного board даёт
+явный partial; all failed не создаёт writer. First_seen/upsert и original Airbnb IDs
+сохранены. География/reasons — в локальном HTML/JSON каталоге, новых Sheets колонок нет.
+Legacy v0.5 runner сохранён; browser/application spike не включается в поиск/отклики.
+[ADR 010](../adr/010-multi-source-catalog.md), [операции](../operations/multi-source-v0.6.md).

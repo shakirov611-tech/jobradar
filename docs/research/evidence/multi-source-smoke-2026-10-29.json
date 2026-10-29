@@ -1,0 +1,100 @@
+{
+  "observedAt": "2026-10-29T13:37:05.831Z",
+  "method": "Public GET only, no n8n/Sheets writes",
+  "sourceConfig": "config/sources.json",
+  "rolePolicy": "product-growth-delivery-v1",
+  "total": 751,
+  "roleCandidates": 52,
+  "sourceResults": [
+    {
+      "sourceId": "greenhouse_airbnb",
+      "provider": "greenhouse",
+      "company": "Airbnb",
+      "status": "passed",
+      "total": 190,
+      "matched": 17,
+      "roleReview": 4,
+      "geography": {
+        "plausible": 0,
+        "review": 8,
+        "restricted": 9
+      }
+    },
+    {
+      "sourceId": "greenhouse_pandadoc",
+      "provider": "greenhouse",
+      "company": "PandaDoc",
+      "status": "passed",
+      "total": 9,
+      "matched": 6,
+      "roleReview": 0,
+      "geography": {
+        "plausible": 0,
+        "review": 6,
+        "restricted": 0
+      }
+    },
+    {
+      "sourceId": "greenhouse_grafanalabs",
+      "provider": "greenhouse",
+      "company": "Grafana Labs",
+      "status": "passed",
+      "total": 129,
+      "matched": 9,
+      "roleReview": 2,
+      "geography": {
+        "plausible": 0,
+        "review": 4,
+        "restricted": 5
+      }
+    },
+    {
+      "sourceId": "greenhouse_canonical",
+      "provider": "greenhouse",
+      "company": "Canonical",
+      "status": "passed",
+      "total": 314,
+      "matched": 15,
+      "roleReview": 6,
+      "geography": {
+        "plausible": 0,
+        "review": 15,
+        "restricted": 0
+      }
+    },
+    {
+      "sourceId": "greenhouse_tide",
+      "provider": "greenhouse",
+      "company": "Tide",
+      "status": "passed",
+      "total": 96,
+      "matched": 4,
+      "roleReview": 0,
+      "geography": {
+        "plausible": 0,
+        "review": 3,
+        "restricted": 1
+      }
+    },
+    {
+      "sourceId": "lever_superside",
+      "provider": "lever",
+      "company": "Superside",
+      "status": "passed",
+      "total": 13,
+      "matched": 1,
+      "roleReview": 1,
+      "geography": {
+        "plausible": 1,
+        "review": 0,
+        "restricted": 0
+      }
+    }
+  ],
+  "geography": {
+    "plausible": 1,
+    "review": 36,
+    "restricted": 15
+  },
+  "limits": "Company-board sample; roleCandidates are not confirmed suitable jobs. Geography is provisional and does not confirm work authorization or team language."
+}
