@@ -8,7 +8,7 @@ async function main() {
   if(!mode)throw new Error('Use install, remove or status');
   if(mode==='Install') {
     validateConfig(process.env);
-    const {run}=require('./run-collector.cjs');
+    const run=process.env.JR_COLLECTOR_MODE==='legacy'?require('./run-collector.cjs').run:require('./multi-collector.cjs').runMulti;
     const report=await run(process.env,{test:true});
     console.log(JSON.stringify(report,null,2));
     if(report.status!=='passed')throw new Error('Scheduled pipeline test failed; schedule was not installed');

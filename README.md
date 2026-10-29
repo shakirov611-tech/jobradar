@@ -90,3 +90,21 @@ Playwright изолирован в browser/, обычный collector от не�
 делает это автоматически. Live dry run: `npm.cmd run applications:browser:dry-run` —
 только синтетические данные, без Submit, live POST заблокированы. Выбор файла не означает
 его приём ATS. [Evidence и ограничения](docs/research/browser-dry-run.md).
+
+### Multi-source v0.6 — текущий scheduled collector
+
+Source registry: `config/sources.json`; начальные параметры: `config/search-profile.json`.
+Greenhouse + Lever читаются локально, затем один n8n writer обновляет прежнюю CRM.
+Airbnb vacancy IDs и first_seen/manual fields сохраняются. География пока размечается
+в обзоре, а не исключает вакансии из CRM.
+
+После обновления файлов, сохранив `.env.integration` и `.collector-state`:
+
+```powershell
+npm.cmd run collector:automate
+```
+
+Сначала 3 synthetic inserts из двух providers в тестовую таблицу, затем обновление
+прежней Windows task. `npm.cmd run collector:preview -- --open` открывает read-only
+HTML обзор всех полученных вакансий, ролевых кандидатов, geography и ошибок источников.
+[Обновление, ограничения, partial и откат](docs/operations/multi-source-v0.6.md).

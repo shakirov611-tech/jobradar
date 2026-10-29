@@ -218,3 +218,14 @@ receipt binding и unknown/no-repeat tests. API submission без employer key �
 добавлены Chromium fixture tests и dry-run network guard с запретом live writes.
 Live DOM inspection не равен выполнению guard runner, live upload или Submit.
 Stage B не закрыт; collector не требует обновления/переустановки ради browser spike.
+
+### Переприоритизация пользователем — source expansion v0.6
+
+После APP-01 iteration 2 пользователь указал на искажение выборки из одной компании.
+Приоритет смещён на часть C/SRC-02: registry компаний, второй ATS read adapter, исправление
+role prefilter, geography unknowns и обзор всех полученных/отобранных. Browser spike
+сохраняется, но live fill/upload не следующий приоритет до проверки полезности каталога.
+
+v0.6 не закрывает matching epic: нужны ручная разметка 20–30 кандидатов, проверка языков,
+seniority/географии и расширение регионального покрытия. 2 ATS/несколько компаний не равны
+репрезентативной выборке. [Документация v0.6](../operations/multi-source-v0.6.md).

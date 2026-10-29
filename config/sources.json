@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "provider": "greenhouse",
+      "board": "airbnb",
+      "company": "Airbnb",
+      "enabled": true
+    },
+    {
+      "provider": "greenhouse",
+      "board": "manychat",
+      "company": "Manychat",
+      "enabled": false,
+      "disabled_reason": "Empty board on read-only check"
+    },
+    {
+      "provider": "greenhouse",
+      "board": "pandadoc",
+      "company": "PandaDoc",
+      "enabled": true
+    },
+    {
+      "provider": "greenhouse",
+      "board": "grafanalabs",
+      "company": "Grafana Labs",
+      "enabled": true
+    },
+    {
+      "provider": "greenhouse",
+      "board": "canonical",
+      "company": "Canonical",
+      "enabled": true
+    },
+    {
+      "provider": "greenhouse",
+      "board": "tide",
+      "company": "Tide",
+      "enabled": true
+    },
+    {
+      "provider": "lever",
+      "board": "hostinger",
+      "company": "Hostinger",
+      "region": "global",
+      "enabled": false,
+      "disabled_reason": "Public API returned 404 on global and EU instances"
+    },
+    {
+      "provider": "lever",
+      "board": "superside",
+      "company": "Superside",
+      "region": "global",
+      "enabled": true
+    }
+  ]
+}

@@ -68,3 +68,16 @@ Application intent имеет уникальную политику на user+va
 Unknown блокирует новую попытку до reconciliation. Уникальное ограничение и reservation
 в БД обязательны до side effect; in-memory state fixture не защищает от process crash.
 Точную PostgreSQL migration проектировать в DATA-01, не использовать внутреннюю БД n8n.
+
+## v0.6: source-scoped каталог и предварительная оценка
+
+Greenhouse identity расширена до greenhouse_<board>_<id> (Airbnb unchanged).
+Lever global — lever_<board>_<uuid>, EU — lever_eu_<board>_<uuid>. Все location posts
+с разными ATS IDs пока отдельные записи; semantic equivalence не предполагается.
+
+Local catalog сохраняет sourceId, title/location/URL, role decision/reason,
+geography status/reason/workMode, unknown workAuthorization/teamLanguage. Это
+диагностическая projection, не новая tenancy/product DB. В Google Sheets добавочные
+поля не пишутся. Source completion хранит total, matched, roleReview, geography buckets,
+inserted/updated и passed/failed. Run outcome может быть partial: успешные boards
+записаны, неизвестные источники не интерпретируются как empty или closed.

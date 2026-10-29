@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "country": "BG",
+  "remotePreferred": true,
+  "rolePolicy": "product-growth-delivery-v1",
+  "unknownPolicy": "review",
+  "languagePolicy": "do_not_infer_team_language_from_job_text"
+}

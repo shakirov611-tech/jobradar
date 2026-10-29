@@ -4,9 +4,9 @@ const {randomBytes}=require('node:crypto');
 const {validateConfig}=require('./integration-workflow.cjs');
 const {buildScheduledWorkflow}=require('./scheduled-workflow.cjs');
 const STATE=path.resolve(__dirname,'../.collector-state');
-async function run(env,{dir=STATE,fetchImpl=fetch,sleep=ms=>new Promise(r=>setTimeout(r,ms)),test=false}={}) {
+async function run(env,{dir=STATE,fetchImpl=fetch,sleep=ms=>new Promise(r=>setTimeout(r,ms)),test=false,prepareCollection,acceptResult}={}) {
   const config=validateConfig(env),runId=randomBytes(12).toString('hex');
-  const body=buildScheduledWorkflow(env,runId,{test});
+  let body=buildScheduledWorkflow(env,runId,{test}),payload={};
   fs.mkdirSync(dir,{recursive:true});
   const lock=path.join(dir,'running.lock');
   let fd;
@@ -29,6 +29,7 @@ async function run(env,{dir=STATE,fetchImpl=fetch,sleep=ms=>new Promise(r=>setTi
   }
   try {
     await request('/api/v1/workflows?limit=1');
+    if(prepareCollection){report.stage='sources';({body,payload}=await prepareCollection(runId,report));}
     report.stage='create';
     const created=await request('/api/v1/workflows','POST',body);
     if(!created.id)throw new Error('Missing workflow ID');
@@ -38,7 +39,7 @@ async function run(env,{dir=STATE,fetchImpl=fetch,sleep=ms=>new Promise(r=>setTi
     let result;
     for(let i=0;i<21;i++) {
       dispatched=true;
-      try {result=await request('/webhook/jobradar-collect-'+runId,'POST',{},true);break;}
+      try {result=await request('/webhook/jobradar-collect-'+runId,'POST',payload,true);break;}
       catch(e) {
         if(!e.unregistered)throw e;
         dispatched=false;
@@ -47,12 +48,14 @@ async function run(env,{dir=STATE,fetchImpl=fetch,sleep=ms=>new Promise(r=>setTi
       }
     }
     if(result?.ok!==true || result.runId!==runId || !['total','matched','inserted','updated'].every(k=>Number.isSafeInteger(result[k])&&result[k]>=0) || result.inserted+result.updated!==result.matched || result.total<result.matched)throw new Error('Invalid completion summary');
-    if(test && (result.total!==1 || result.matched!==1 || result.inserted!==1 || result.updated!==0))throw new Error('Synthetic insert not confirmed');
-    confirmed=true;
+    if(test && !acceptResult && (result.total!==1 || result.matched!==1 || result.inserted!==1 || result.updated!==0))throw new Error('Synthetic insert not confirmed');
     report.status='passed';report.counts={total:result.total,matched:result.matched,inserted:result.inserted,updated:result.updated};
+    if(acceptResult)acceptResult(result,report);
+    confirmed=true;
   }catch(e) {
+    report.status='failed';if(!confirmed)delete report.counts;
     // No raw exception: a transport error can include URLs, tokens or payloads.
-    report.error=e.status?'HTTP '+e.status:'Request or completion check failed';
+    report.error=e.status?'HTTP '+e.status:/^JR_[A-Z0-9_]+$/.test(e.message)?e.message:'Request or completion check failed';
     retain=dispatched&&!confirmed;
   }finally {
     if(workflowId) {
@@ -73,7 +76,7 @@ async function run(env,{dir=STATE,fetchImpl=fetch,sleep=ms=>new Promise(r=>setTi
     // Persist evidence before releasing the lock. If disk writes fail it remains.
     fs.writeFileSync(path.join(dir,runId+'.json'),JSON.stringify(report,null,2)+'\n');
     fs.writeFileSync(path.join(dir,'latest.json'),JSON.stringify(report,null,2)+'\n');
-    if(confirmed&&!test)fs.writeFileSync(path.join(dir,'last-success.json'),JSON.stringify(report,null,2)+'\n');
+    if(confirmed&&!test&&!report.sourceResults?.some(s=>s.status==='failed'))fs.writeFileSync(path.join(dir,'last-success.json'),JSON.stringify(report,null,2)+'\n');
     if(!retain)fs.unlinkSync(lock);
   }
   return report;
@@ -84,6 +87,6 @@ function status(dir=STATE) {
 }
 if(require.main===module) {
   if(process.argv.includes('--status'))console.log(JSON.stringify(status(),null,2));
-  else run(process.env,{test:process.argv.includes('--test')}).then(r=>{console.log(JSON.stringify(r,null,2));if(r.status!=='passed')process.exitCode=1;}).catch(()=>{console.error('Collector could not start. Check .env.integration and local file permissions.');process.exitCode=1;});
+  else ((process.argv.includes('--legacy')||process.env.JR_COLLECTOR_MODE==='legacy')?run:require('./multi-collector.cjs').runMulti)(process.env,{test:process.argv.includes('--test')}).then(r=>{console.log(JSON.stringify(r,null,2));if(r.status!=='passed')process.exitCode=1;}).catch(()=>{console.error('Collector could not start. Check .env.integration, config JSON files and local file permissions.');process.exitCode=1;});
 }
 module.exports={run,status,STATE};
