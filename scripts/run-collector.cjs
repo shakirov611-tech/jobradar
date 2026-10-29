@@ -65,6 +65,8 @@ async function run(env,{dir=STATE,fetchImpl=fetch,sleep=ms=>new Promise(r=>setTi
         else {
           for(let i=0;i<21;i++) {
             try{await request('/api/v1/workflows/'+encodeURIComponent(workflowId),'DELETE');break;}
+            // The enclosing catch records cleanup failure; this throw never escapes finally.
+            // eslint-disable-next-line no-unsafe-finally
             catch(e){if(e.status===404)break;if(e.status!==409||i===20)throw e;await sleep(500);}
           }
           report.cleanup='completed';

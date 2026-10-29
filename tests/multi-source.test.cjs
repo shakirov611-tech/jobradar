@@ -1,7 +1,7 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const os=require('node:os');const path=require('node:path');const vm=require('node:vm');
 const {classifyRole,classifyGeography}=require('../src/matching/role-and-geography.cjs');
 const {validateSources,sourceId,normalizeFeed,collectSources,fetchFeed}=require('../src/sources/catalog.cjs');
-const {validateEnvelope,buildMultiWorkflow,fixtures,runMulti,settings}=require('../scripts/multi-collector.cjs');
+const {validateEnvelope,buildMultiWorkflow,runMulti,settings}=require('../scripts/multi-collector.cjs');
 const {renderCatalog}=require('../src/reports/catalog-preview.cjs');const {status}=require('../scripts/run-collector.cjs');
 const profile=require('../config/search-profile.json');const at='2026-10-29T12:00:00.000Z';
 const gh={provider:'greenhouse',board:'airbnb',company:'Airbnb',enabled:true};const lever={provider:'lever',board:'test',company:'Lever Test',region:'global',enabled:true};

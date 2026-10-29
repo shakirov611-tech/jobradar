@@ -12,7 +12,7 @@
 
 ## Тесты
 
-Требуется Node.js 22 или новее. Зависимости npm не нужны.
+Требуется Node.js 22 или новее. Для ESLint нужны dev dependencies: `npm.cmd ci --ignore-scripts`. Сборщик не требует их.
 
 ```bash
 npm test
@@ -120,3 +120,8 @@ remote из полей/описания без обнаруженных country 
 «Формат неясен», офис/обязательный hybrid → исключённая группа. Evidence видно рядом.
 Google Sheets сохраняет весь ролевой каталог: строки не удаляются и last_seen не теряется.
 [Правила и ограничения](docs/operations/remote-view-v0.6.1.md).
+
+## Автоматические проверки
+
+Push и PR запускают ESLint, проверку конфигураций, unit/fixture integration и отдельные browser tests.
+Локально: `npm.cmd run check` после npm ci. [Границы CI и реальные integration tests](docs/operations/ci.md).

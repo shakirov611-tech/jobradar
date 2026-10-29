@@ -58,6 +58,8 @@ async function main() {
           try {await request(config.origin+'/api/v1/workflows/'+encodeURIComponent(workflowId),'DELETE');break;}
           catch(error) {
             if(error.status===404)break;
+            // The enclosing catch records cleanup failure; this throw never escapes finally.
+            // eslint-disable-next-line no-unsafe-finally
             if(error.status!==409 || attempt===20)throw error;
             report.cleanupRetries=attempt+1;
             await new Promise(resolve=>setTimeout(resolve,500));

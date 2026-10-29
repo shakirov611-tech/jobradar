@@ -1,5 +1,5 @@
 const fs=require('node:fs');const path=require('node:path');
-const {validateSources,collectSources,sourceId}=require('../src/sources/catalog.cjs');
+const {validateSources,collectSources}=require('../src/sources/catalog.cjs');
 const {buildScheduledWorkflow}=require('./scheduled-workflow.cjs');
 function settings(env) {
  const root=path.resolve(__dirname,'..');

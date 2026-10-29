@@ -7,7 +7,7 @@ const path=require('node:path');
 async function scenario(failWebhook=false,failCleanup=false){
  const calls=[];
  const server=http.createServer(async(req,res)=>{
-  calls.push(req.method+' '+req.url);let body='';for await(const chunk of req)body+=chunk;
+  calls.push(req.method+' '+req.url);for await(const chunk of req) { void chunk; }
   res.setHeader('Content-Type','application/json');
   if(req.url==='/api/v1/workflows'&&req.method==='POST'){assert.ok(req.headers['x-n8n-api-key']);res.end(JSON.stringify({id:'test-only'}));}
   else if(req.url.startsWith('/webhook/')){
@@ -38,7 +38,7 @@ test('cleanup failure makes the command fail and identifies leftover workflow',a
 async function delayedRegistration({generic404=false, timeout=false}={}) {
  let webhooks=0,deletes=0;const key='sensitive-api-key';
  const server=http.createServer(async(req,res)=>{
-  for await(const chunk of req) {}res.setHeader('Content-Type','application/json');
+  for await(const chunk of req) { void chunk; }res.setHeader('Content-Type','application/json');
   if(req.url==='/api/v1/workflows')return res.end(JSON.stringify({id:'delayed'}));
   if(req.url.startsWith('/webhook/')) {
    webhooks++;
