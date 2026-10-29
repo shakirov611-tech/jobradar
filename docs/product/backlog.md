@@ -73,3 +73,10 @@ per-source completion. Локальный новый n8n writer gate — pending
 Остаются To do: 20–30 пользовательских relevance labels, seniority/языки/домен/зарплата,
 региональные источники за пределами отдельного company board, semantic dedup по должности.
 APP-01 live fill/upload отложен по приоритету, не отменён. Backup deferral сохраняется.
+
+## v0.6.1 — согласованный remote-first основной view
+
+Добавлены description evidence и main/unclear/excluded группы. Main по умолчанию требует
+подтверждённого remote; CRM сохраняет прежний role catalog. Нет неизвестное→onsite
+преобразования. Country/язык/права остаются отдельными unknown. Следующий quality gate —
+пользовательская разметка правильности отсева и полезности основной выдачи.

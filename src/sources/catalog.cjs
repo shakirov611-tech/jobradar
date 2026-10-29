@@ -51,11 +51,11 @@ function normalizeFeed(s,feed,observedAt,profile) {
   const loc=gh?job.location?.name:job.categories?.allLocations?.join('; ')||job.categories?.location;
   const location=typeof loc==='string'?loc:'';
   const work=typeof workplace==='string'?workplace:'Unknown';
-  const role=classifyRole(title),geography=classifyGeography(location,work,profile);
+  const desc=gh?job.content:[job.description||'',...(Array.isArray(job.lists)?job.lists.map(x=>(x.text||'')+'\n'+(x.content||'')):[]),job.additional||''].join('\n');
+  const role=classifyRole(title),geography=classifyGeography(location,work,profile,desc);
   const originalUrl=gh?job.absolute_url:job.hostedUrl;
   catalog.push({vacancy_id:key,sourceId:sourceId(s),company:s.company,title,location,original_url:typeof originalUrl==='string'?originalUrl:'',role,geography});
   if(!role.matched)continue;
-  const desc=gh?job.content:[job.description||'',...(Array.isArray(job.lists)?job.lists.map(x=>(x.text||'')+'\n'+(x.content||'')):[]),job.additional||''].join('\n');
   const date=Number.isSafeInteger(job.createdAt)&&job.createdAt>0&&job.createdAt<=8640000000000000?new Date(job.createdAt).toISOString():'';
   rows.push({vacancy_id:key,company:s.company,title,source:gh?'Greenhouse':'Lever',original_url:typeof originalUrl==='string'?originalUrl:'',canonical_url:typeof originalUrl==='string'?originalUrl:'',location,workplace_type:work,language:typeof job.language==='string'?job.language:'Unknown',published_at:gh?(typeof job.first_published==='string'?job.first_published:''):date,updated_at:gh?(typeof job.updated_at==='string'?job.updated_at:''):'',active_status:'active_in_feed',description:typeof desc==='string'?desc.slice(0,30000):'',last_seen_at:observedAt});
  }
@@ -66,7 +66,7 @@ async function collectSources(sources,profile,{fetchImpl=fetch,sleep,observedAt=
  // Two read-only requests concurrently, bounded source/page counts.
  for(let start=0;start<sources.length;start+=2) {
   const batch=await Promise.all(sources.slice(start,start+2).map(async s=>{
-   try{const feed=loadFeed?await loadFeed(s):await fetchFeed(s,{fetchImpl,sleep});const n=normalizeFeed(s,feed,observedAt,profile);return {sourceId:sourceId(s),provider:s.provider,company:s.company,status:'passed',total:n.total,matched:n.rows.length,roleReview:n.catalog.filter(x=>x.role.matched&&x.role.reason.endsWith('needs_review')).length,geography:Object.fromEntries(['plausible','review','restricted'].map(k=>[k,n.catalog.filter(x=>x.role.matched&&x.geography.status===k).length])),rows:n.rows,catalog:n.catalog};}
+   try{const feed=loadFeed?await loadFeed(s):await fetchFeed(s,{fetchImpl,sleep});const n=normalizeFeed(s,feed,observedAt,profile);return {sourceId:sourceId(s),provider:s.provider,company:s.company,status:'passed',total:n.total,matched:n.rows.length,views:Object.fromEntries(['main','unclear','excluded'].map(k=>[k,n.catalog.filter(x=>x.role.matched&&x.geography.visibility===k).length])),roleReview:n.catalog.filter(x=>x.role.matched&&x.role.reason.endsWith('needs_review')).length,geography:Object.fromEntries(['plausible','review','restricted'].map(k=>[k,n.catalog.filter(x=>x.role.matched&&x.geography.status===k).length])),rows:n.rows,catalog:n.catalog};}
    catch(e){return {sourceId:sourceId(s),provider:s.provider,company:s.company,status:'failed',error:/^JR_[A-Z0-9_]+$/.test(e.message)?e.message:'JR_SOURCE_FAILED',total:0,matched:0,rows:[],catalog:[]};}
   }));results.push(...batch);
  }

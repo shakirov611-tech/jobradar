@@ -108,3 +108,11 @@ npm.cmd run collector:automate
 прежней Windows task. `npm.cmd run collector:preview -- --open` открывает read-only
 HTML обзор всех полученных вакансий, ролевых кандидатов, geography и ошибок источников.
 [Обновление, ограничения, partial и откат](docs/operations/multi-source-v0.6.md).
+
+### Основная выдача remote — v0.6.1
+
+`npm.cmd run collector:preview -- --open` по умолчанию показывает подтверждённый
+remote из полей/описания без обнаруженных country restrictions. Только локация →
+«Формат неясен», офис/обязательный hybrid → исключённая группа. Evidence видно рядом.
+Google Sheets сохраняет весь ролевой каталог: строки не удаляются и last_seen не теряется.
+[Правила и ограничения](docs/operations/remote-view-v0.6.1.md).
