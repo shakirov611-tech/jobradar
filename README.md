@@ -1,26 +1,30 @@
 # JobRadar
 
-Автоматизированный поиск работы. Текущая версия: **v0.3 — проверка ответа Greenhouse и ID вакансий**.
+Автоматизированный поиск работы. Последний опубликованный выпуск: **[v0.6.1](https://github.com/shakirov611-tech/jobradar/releases/tag/v0.6.1)**.
 
-## Что уже есть
+## Текущее состояние
 
-Локальный n8n в Docker / Windows / WSL2: ручной запуск → Greenhouse Airbnb → JavaScript → Google Sheets. Сопоставление автоматически по именам полей, append/update по `vacancy_id`, обновление `last_seen_at`.
+Локальный Node collector читает Greenhouse/Lever; n8n в Docker на Windows/WSL2 обновляет Google Sheets. Есть расписание, дедупликация, first_seen/last_seen, отчёты и тесты. HTML обзор по умолчанию показывает подтверждённый remote; CRM сохраняет весь ролевой каталог.
 
-В v0.3 добавлена проверка структуры ответа и положительного целочисленного ID до передачи записей в Sheets. Исходный экспорт сохранён для сравнения. Новая версия проверена 20 изолированными тестами; внедрение в локальный n8n и интеграционная проверка Google Sheets ещё не подтверждены.
+97 Node-тестов и 5 браузерных тестов прошли для v0.6.1. Локально подтверждены v0.4 и первый scheduled run v0.5; установка v0.6.1 и отдельная проверка multi-source writer ещё не зафиксированы. Генерация резюме и реальные автоотклики пока не реализованы.
+
+Начать с [актуального roadmap](docs/product/roadmap.md), [backlog](docs/product/backlog.md) и [плана этапов](docs/product/implementation-plan-v1.md). Следующий этап — качество персонального подбора (C / MATCH-01).
 
 ## Тесты
 
-Требуется Node.js с поддержкой `node:test`. Зависимости npm не нужны.
+Требуется Node.js 22 или новее. Зависимости npm не нужны.
 
 ```bash
-node --test tests/normalization-baseline.test.cjs
+npm test
 ```
 
 Часть тестов фиксирует известные ограничения, а не желаемое поведение. Для корректного feed отдельно проверяется эквивалентность исходному экспорту без timestamp.
 
-## Локальная проверка
+## Обновление и локальная проверка
 
-Следовать [инструкции v0.3](docs/operations/validation-v0.3-rollout.md). Новый workflow импортируется отдельно и настраивается на копию CRM. JSON содержит placeholders таблицы и не содержит credential reference. Не заменять работающий экземпляр без тестового прогона и сохранённого исходного экспорта.
+[Инструкция v0.6.1](docs/operations/remote-view-v0.6.1.md), [переход на multi-source](docs/operations/multi-source-v0.6.md), [интеграционные тесты](docs/operations/integration-tests.md).
+Сохранить .env.integration и .collector-state. Облако не обращается к локальному n8n напрямую.
+[Changelog](CHANGELOG.md) и [порядок выпуска](docs/operations/releases.md). Разделы ниже о ранних версиях описывают историю изменений.
 
 ## Документация
 

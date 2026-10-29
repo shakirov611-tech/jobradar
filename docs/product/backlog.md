@@ -1,82 +1,46 @@
-# Product Backlog
+# JobRadar — текущий Product Backlog
 
-> Обновление 29.10.2026: получены экспорт и точный JS. Актуальные подтверждения, ограничения и результаты 12 тестов — [аудит экспорта](../audit-workflow-export.md). Противоречащие ему утверждения ниже об отсутствии workflow/кода относятся к первоначальному срезу. Baseline gate ещё не закрыт.
+Обновлено 2026-10-29, baseline релиза v0.6.1. [Roadmap](roadmap.md) — статусы этапов; [план](implementation-plan-v1.md) — подробные критерии.
+«Реализовано» не означает подтверждённое развёртывание каждой версии на ПК.
 
+| Epic / прежние задачи | Статус | Следующий результат и приёмка |
+|---|---|---|
+| DEV-01 / JR-001,003,007 | Основа готова; часть отложена | Экспорт, код, n8n 2.45.5 и CI есть. Digest/upgrade-rollback вернуть до инфраструктурного обновления |
+| JR-002 | Отложено пользователем | Изолированный backup/restore до изменения инфраструктуры или второго пользователя |
+| DEV-02 / JR-004,006 | Реализовано, локально подтверждено v0.4 | Одна команда проверяет insert/dedup/update, даты и ручные поля |
+| COL-01 / JR-005,008 | Реализовано; первый scheduled v0.5 подтверждён | Наблюдать повторяемость; отдельно зафиксировать локальный multi-source writer после обновления |
+| SRC-02 / JR-014 | Первая итерация выпущена | Greenhouse/Lever и registry есть; новые источники выбирать по пробелам покрытия; semantic dedup ещё нет |
+| MATCH-01 / JR-009 | **Сейчас, P0** | Профиль: hard constraints/preferences; fit/gaps/unknown; 20–30 labels; измерить false positives/negatives и unknown |
+| DOC-01 | Далее, P1 | Подтверждённые факты, версия профиля, адаптация резюме, diff, проверяемый текстовый PDF |
+| APP-01 | Прототип; завершить до APP-02 | Controlled fixtures проходят; ещё нужны разрешённые live upload/Submit/receipt и unknown/no-repeat |
+| DATA-01 / часть JR-011 | До реальных отправок | Постоянное хранение package/approval/attempt, reservation и защита от повторов после crash |
+| APP-02 | После B+C+D+DATA-01 | Один канал: подготовка → проверка пользователем → отправка → подтверждение; ручной fallback |
+| APP-03 | После APP-02 | Автоматическая обработка выбранного списка, opt-in, дневной лимит, timezone, pause и recovery |
+| APP-04 | После APP-03 и quality gate | Автоматическое добавление по правилам с повторной проверкой ограничений |
+| UX-01 / JR-012 | До пилота | Профиль, выдача, документы, очередь и история без обязательной настройки JSON пользователем |
+| SaaS-01 / JR-010,011,013 | До второго пользователя | Проверка pilot scope, auth/isolation, hosting, private storage, lifecycle и проверяемое восстановление |
+| JR-015 | Позже, по UX потребности | Уведомления с consent, timezone, dedup и отключением |
+| BIZ-01 / JR-016 | После pilot evidence | Цена, billing и экономика по наблюдаемой ценности |
 
-Состояние на 29.10.2026. Оценки относительные: S до 1 сессии, M несколько сессий, L отдельная итерация; не обещание сроков. Все implementation задачи — To do. Документация этой версии — Draft.
+## Ближайшая итерация MATCH-01
 
-| ID | Приоритет / размер | Результат для пользователя | Acceptance criteria | Зависит от |
-|---|---|---|---|---|
-| JR-001 | P0 / M | Воспроизводимый baseline | Санитизированный workflow, точный JS, versions, trigger, board list, Sheets mapping и заголовки; расхождения E1–E5 разрешены | Локальный экспорт |
-| JR-002 | P0 / M | Можно восстановить рабочий сервис | Полный приватный backup; изолированный restore без записи в исходную CRM; измеренное время | JR-001 |
-| JR-003 | P0 / S | Настройки понятны и не теряются | Для каждого параметра указано действующее место; E2 помечен legacy либо сверен; нет второго скрытого config | JR-001 |
-| JR-004 | P0 / M | Повтор не портит CRM | Два одинаковых прогона: уникальные ID неизменны; last_seen растёт; first_seen/заметки сохранены; заголовки уникальны | JR-001,002 |
-| JR-005 | P1 / M | Ошибка не превращает вакансии в закрытые | Проверены 429, 5xx, malformed и partial feed; нет ложного закрытия; видна ошибка запуска | JR-004 |
-| JR-006 | P1 / M | Нормализация проверяема | Существующий JS вынесен без изменения логики; fixtures и regression tests проходят | JR-004 |
-| JR-007 | P1 / S | Предсказуемые обновления | Текущий digest зафиксирован; отдельный upgrade/rollback checklist проверен | JR-002 |
-| JR-008 | P1 / M | Видно, когда поиск работал | run_id, время, outcome, counts и последнее успешное обновление; без секретов в logs | Baseline gate |
-| JR-009 | P1 / M | Выдача полезнее сырого каталога | Версионированные критерии; unknown не rejection; US-only не считается BG eligible; причины видны; ручная оценка выборки | Baseline gate,006 |
-| JR-010 | P1 / M | Пилот соответствует реальной задаче | Интервью 3–5 кандидатов; определены onboarding, полезная вакансия, успех и ожидания свежести; scope pilot | Baseline gate |
-| JR-011 | P1 / L | Приватные данные изолированы | Backend auth; product DB migration; unique upsert; tests A/B deny cross-user access; backup/rollback; владелец каждого CRM поля | JR-010,009 |
-| JR-012 | P1 / L | Удобное начало без ручного JSON | Минимальный UI: профиль, выдача, причина match, CRM статус, свежесть/ошибка; usability test и исправления | JR-011 |
-| JR-013 | P1 / M | Работа без включённого ПК | Hosting ADR, мониторинг, secrets, проверенный restore; n8n licensing review для выбранного UX | JR-010,011 |
-| JR-014 | P2 / M | Новые источники без поломки модели | Один новый adapter, свои fixtures, scoped IDs и текущие terms/rate limits проверены | JR-006,009 |
-| JR-015 | P2 / M | Нет повторных уведомлений | Только после UX проверки: consent, timezone, delivery dedup, retry и unsubscribe | JR-012 |
-| JR-016 | Later / L | Экономически устойчивый SaaS | Billing/support/deletion, цена и cost per useful vacancy обоснованы на pilot | Pilot gate |
+- Подготовить профиль ролей, уровня, географии и языков; неизвестное хранить явно.
+- Разделить формат remote, доступность найма из страны и язык команды.
+- Добавить объяснения пригодности и простую разметку «подходит / не подходит / уточнить».
+- Зафиксировать выборку 20–30 вакансий из разных групп; проверить также ложный отсев.
+- Установить порог качества после разметки; результаты должны воспроизводиться на fixtures.
+- Сохранить ID, даты и ручные поля CRM. Не переносить фильтр обзора на writer неявно.
 
-Не брать сейчас: Kubernetes, микросервисы, массовый scraping LinkedIn, автоматические отклики, LLM scoring без baseline качества, billing до подтверждения ценности. Это ограничения текущего scope, не запрет на будущее.
+## Доказательства и незакрытые проверки
 
-## Уточнение scope и evidence E6
-JR-001: экспорт/JS/узлы/mapping получены, остаются runtime version, headers и local regression. Резюме, autofill и автоотклики включены в core scope и больше не относятся к откладываемым функциям. Их реализация следует за baseline gate: technical spike канала → подтверждённые факты и документы → assisted → automatic selected list → rules-based selection. Gmail sync отдельно необязателен.
+v0.6.1 опубликована: 97 Node + 5 browser tests, CI успешен. Пользователь подтвердил v0.4 integration и первый scheduled production v0.5.
+Установка v0.6.1 и отдельный multi-source runtime test пока не зафиксированы доказательствами.
+Remote evidence и main/unclear/excluded реализованы только для обзора; персональный matching ещё не измерен.
+Язык команды, seniority, домен, зарплата и право на работу не считаются автоматически подтверждёнными.
+Реальных отправок работодателям не было; browser DOM inspection не равен успешному upload или Submit.
 
-## Актуальный implementation срез 2026-10-29, v0.5
+## Границы
 
-Эта таблица уточняет первоначальные To do выше, которые отражают исторический аудит.
-
-| Область | Статус / evidence |
-|---|---|
-| Runtime baseline | n8n 2.45.5, local Docker; исходный workflow сохранён |
-| Backup/restore (JR-002) | Отложен пользователем до infrastructure update / второго пользователя |
-| Нормализация (JR-006) | Код и регрессионные тесты в Git, CI включён |
-| Повторные записи (JR-004) | v0.4 подтверждён пользователем в тестовой и рабочей таблицах |
-| Настройка collector | v0.4 автоматический импорт/Sheets wiring подтверждён пользователем |
-| Ошибки/наблюдаемость (JR-005/008) | v0.5: reports, counts, last success, пустой результат, timeout, lock; локальные тесты пройдены, новый runtime pending |
-| Расписание | v0.5: task каждые 3 часа, test-first installer; Windows/runtime pending |
-| Auto-apply канал | Следующая продуктовая техническая проверка по согласованному плану, до реализации отправок |
-
-Остаются ограничения нормализации: текущий title regex, отсутствие геофильтра,
-entity-encoded description, ручная оценка полноты upstream. Они не исправлены v0.5.
-
-## После подтверждения scheduled v0.5
-
-- COL-01 / JR-008: первый scheduled production run подтверждён пользователем;
-  repeat cadence остаётся наблюдать, внешних notifications нет.
-- APP-01, итерация 1: read-only requirements + controlled HTTP upload/receipt/unknown
-  реализованы. API key constraint проверен по официальным источникам. Реальный
-  browser channel, upload и разрешённый Submit — To do; epic не закрыт.
-- DATA-01: durable package/approval/attempt state обязателен до реальных отправок;
-  in-memory test prototype не переносить в production adapter.
-
-## APP-01 — browser iteration 2
-
-Добавлены отдельные Playwright fixture tests и узкий guarded dry-run runner.
-Живой DOM Airbnb wrapper + Greenhouse iframe проверен облачным браузером;
-реальные поля не заполнялись, upload и Submit не выполнялись. Browser tests выполняет
-отдельный CI job; Chromium download в локальной shell-среде недоступен.
-Stage B остаётся открытым до live fill/upload/confirmation в разрешённом сценарии.
-
-## Новое решение пользователя — качество и покрытие перед следующим application spike
-
-SRC-02/часть MATCH-01 подняты в текущий приоритет. v0.6: source registry, Greenhouse/Lever
-read adapters, role policy v1, geography annotations BG, HTML/JSON аудит каталога и
-per-source completion. Локальный новый n8n writer gate — pending пользовательский test.
-Остаются To do: 20–30 пользовательских relevance labels, seniority/языки/домен/зарплата,
-региональные источники за пределами отдельного company board, semantic dedup по должности.
-APP-01 live fill/upload отложен по приоритету, не отменён. Backup deferral сохраняется.
-
-## v0.6.1 — согласованный remote-first основной view
-
-Добавлены description evidence и main/unclear/excluded группы. Main по умолчанию требует
-подтверждённого remote; CRM сохраняет прежний role catalog. Нет неизвестное→onsite
-преобразования. Country/язык/права остаются отдельными unknown. Следующий quality gate —
-пользовательская разметка правильности отсева и полезности основной выдачи.
+Генерация резюме и автоотклики входят в core scope. Сейчас не вводим Kubernetes, микросервисы,
+массовый scraping LinkedIn, LLM scoring без benchmark и billing без pilot evidence.
+Старые JR-ID сохранены для трассировки; исторические редакции доступны в Git.
