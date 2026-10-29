@@ -10,6 +10,9 @@ test('rejects remote URLs, credentials in URL and production sheet',()=>{
 });
 test('generated workflow uses synthetic data and only configured test resources',()=>{
  const w=buildWorkflow(validateConfig(env),'abcdef123456abcdef123456');
+ const {prepareVacancyUpsert}=require('../src/storage/prepare-vacancy-upsert.cjs');
+ for(const name of ['Prepare first insert','Prepare existing update'])assert.ok(w.nodes.find(n=>n.name===name).parameters.jsCode.includes(prepareVacancyUpsert.toString()));
+ assert.ok(!w.nodes.find(n=>n.name==='Seed manual fields').parameters.jsCode.includes('first_seen_at'));
  assert.equal(w.nodes.filter(n=>n.type==='n8n-nodes-base.httpRequest').length,0);
  const sheets=w.nodes.filter(n=>n.type==='n8n-nodes-base.googleSheets');
  assert.equal(sheets.length,5);

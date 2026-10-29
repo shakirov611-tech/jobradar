@@ -1,11 +1,13 @@
 {
   "name": "jobradar",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "test": "node --test tests/*.test.cjs",
     "test:integration": "node --env-file=.env.integration scripts/test-integration.cjs",
-    "workflow:build": "node scripts/build-workflow.cjs"
+    "workflow:build": "node scripts/build-workflow.cjs && node scripts/build-first-seen-workflow.cjs"
   }
 }

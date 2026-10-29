@@ -55,3 +55,7 @@ node --test tests/normalization-baseline.test.cjs
 `npm test` запускает изолированные проверки, в том числе соответствие экспортируемого workflow исходнику. `npm run workflow:build` переносит актуальный jsCode в TEST workflow. `npm run test:integration` использует локальный `.env.integration` и отдельный тестовый лист; разовая настройка и ограничения — [инструкция](docs/operations/integration-tests.md). Реальный n8n/Sheets прогон из облачной среды не выполнялся.
 
 Утверждённый [план реализации](docs/product/implementation-plan-v1.md): сейчас выполняется этап A. Сведения в нём о PR #1 относятся к моменту планирования; CI PR #1 теперь слит в main.
+
+## first_seen v0.4
+
+Подготовлен TEST workflow с чтением хранилища: новые вакансии получают first_seen_at, существующие сохраняют исходную дату или пустое значение. [Правила и локальная проверка](docs/operations/first-seen-v0.4.md). Нормализатор отдельно first_seen не создаёт. Интеграционный тест v0.4 ожидает проверки first-seen-created и first-seen-preserved. Backup/restore отложен пользователем и не блокирует текущую правку; локальный production workflow автоматически не обновлялся.
