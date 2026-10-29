@@ -46,3 +46,13 @@ JR-001: экспорт/JS/узлы/mapping получены, остаются ru
 
 Остаются ограничения нормализации: текущий title regex, отсутствие геофильтра,
 entity-encoded description, ручная оценка полноты upstream. Они не исправлены v0.5.
+
+## После подтверждения scheduled v0.5
+
+- COL-01 / JR-008: первый scheduled production run подтверждён пользователем;
+  repeat cadence остаётся наблюдать, внешних notifications нет.
+- APP-01, итерация 1: read-only requirements + controlled HTTP upload/receipt/unknown
+  реализованы. API key constraint проверен по официальным источникам. Реальный
+  browser channel, upload и разрешённый Submit — To do; epic не закрыт.
+- DATA-01: durable package/approval/attempt state обязателен до реальных отправок;
+  in-memory test prototype не переносить в production adapter.

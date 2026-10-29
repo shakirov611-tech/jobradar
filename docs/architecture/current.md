@@ -53,3 +53,14 @@ first_seen создаётся только для новых ID, историч�
 счётчики и исход; неизвестный результат удерживает lock. Облако не обращается к localhost.
 Docker остаётся прежним. Это реализовано, но новый runtime путь ещё требует локальной
 проверки; [инструкция](../operations/scheduled-collector-v0.5.md), [ADR 007](../adr/007-local-scheduled-writer.md).
+
+## Runtime evidence и APP-01 — 2026-10-29
+
+Пользователь подтвердил первый scheduled production run v0.5: 190/15/0/15
+(total/matched/inserted/updated), cleanup completed, lock null, Windows task result 0.
+Значит, test-first installer и Windows execution проверены; повторяемость следующего
+трёхчасового интервала отдельно не подтверждалась.
+
+APP-01 добавляет изолированное чтение требований формы и controlled HTTP fixture.
+Никакой application worker не включён в scheduled collector, реальная отправка
+к работодателю не реализована. [Evidence и ограничения](../research/application-channel-spike.md).

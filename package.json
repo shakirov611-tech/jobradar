@@ -15,6 +15,8 @@
     "collector:status": "node scripts/run-collector.cjs --status",
     "collector:automate": "node --env-file=.env.integration scripts/collector-schedule.cjs install",
     "collector:schedule:status": "node scripts/collector-schedule.cjs status",
-    "collector:schedule:remove": "node scripts/collector-schedule.cjs remove"
+    "collector:schedule:remove": "node scripts/collector-schedule.cjs remove",
+    "test:applications": "node --test tests/application-spike.test.cjs",
+    "applications:inspect": "node scripts/inspect-application.cjs"
   }
 }
