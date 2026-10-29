@@ -34,3 +34,36 @@ test('webhook failure is not retried and cleanup still runs',async()=>{
 test('cleanup failure makes the command fail and identifies leftover workflow',async()=>{
  const r=await scenario(false,true);assert.equal(r.code,1);assert.equal(r.report.cleanup,'failed');assert.equal(r.report.cleanupWorkflowId,'test-only');
 });
+
+async function delayedRegistration({generic404=false, timeout=false}={}) {
+ let webhooks=0,deletes=0;const key='sensitive-api-key';
+ const server=http.createServer(async(req,res)=>{
+  for await(const chunk of req) {}res.setHeader('Content-Type','application/json');
+  if(req.url==='/api/v1/workflows')return res.end(JSON.stringify({id:'delayed'}));
+  if(req.url.startsWith('/webhook/')) {
+   webhooks++;
+   if(timeout){req.socket.destroy();return;}
+   const runId=req.url.split('jobradar-test-')[1];
+   if(webhooks===1){res.statusCode=404;return res.end(JSON.stringify(generic404?{message:'unrelated '+key}:{code:404,message:`The requested webhook "POST jobradar-test-${runId}" is not registered.`}));}
+   return res.end(JSON.stringify({ok:true,runId,checks:['mock-only']}));
+  }
+  if(req.method==='DELETE'&&++deletes===1){res.statusCode=409;return res.end(JSON.stringify({message:'Workflow is still published'}));}
+  res.end('{}');
+ });
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ try {
+  const result=await new Promise((resolve,reject)=>{
+   const child=spawn(process.execPath,[path.resolve(__dirname,'../scripts/test-integration.cjs')],{env:{...process.env,N8N_BASE_URL:'http://127.0.0.1:'+server.address().port,N8N_API_KEY:key,N8N_GOOGLE_CREDENTIAL_ID:'fake',JR_PRODUCTION_SPREADSHEET_ID:'prod',JR_TEST_SPREADSHEET_ID:'fake-test',JR_TEST_SHEET_NAME:'JR_TEST_Fake'}});
+   let out='';child.stdout.on('data',x=>out+=x);child.on('error',reject);child.on('close',code=>resolve({code,report:JSON.parse(out)}));
+  });return {...result,webhooks,deletes};
+ }finally {await new Promise(r=>server.close(r));}
+}
+test('explicit unregistered n8n webhook waits; cleanup retries conflict',async()=>{
+ const r=await delayedRegistration();assert.equal(r.code,0);assert.equal(r.webhooks,2);assert.equal(r.deletes,2);assert.equal(r.report.registrationRetries,1);assert.equal(r.report.cleanupRetries,1);
+});
+test('generic 404 is not retried; key is removed from diagnostic message',async()=>{
+ const r=await delayedRegistration({generic404:true});assert.equal(r.code,1);assert.equal(r.webhooks,1);assert.ok(!r.report.error.includes('sensitive-api-key'));assert.ok(r.report.error.includes('[redacted]'));assert.equal(r.report.cleanup,'completed');
+});
+test('ambiguous lost webhook connection is never retried',async()=>{
+ const r=await delayedRegistration({timeout:true});assert.equal(r.code,1);assert.equal(r.webhooks,1);assert.equal(r.report.cleanup,'completed');
+});
