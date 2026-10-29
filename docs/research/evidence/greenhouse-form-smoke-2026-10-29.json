@@ -1,0 +1,18 @@
+{
+  "observedAt": "2026-10-29T12:25:43.395Z",
+  "method": "GET only",
+  "board": "airbnb",
+  "jobId": 8262207,
+  "title": "Product Manager, API Platform",
+  "questionGroups": 26,
+  "unknowns": [
+    "location_questions:unsupported_field",
+    "compliance",
+    "demographic_questions",
+    "data_compliance:manual_review",
+    "demographic_questions:manual_review"
+  ],
+  "apiSubmission": {"status": "unsupported", "reason": "employer_api_key_required"},
+  "hostedForm": {"status": "required_action", "reason": "browser_adapter_not_verified"},
+  "limitations": "Observed API schema only; no DOM inspection, file upload or application submission to this job. Liveness can change after observation."
+}

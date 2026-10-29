@@ -196,3 +196,18 @@ G требует завершённых single-user сценариев и про
 - Успешный CI push-run: https://github.com/shakirov611-tech/jobradar/actions/runs/40861441090
 - Текущий аудит E6 и docs/product/competitive-audit-v0.2.md в репозитории.
 - Порядок и gates — проектные предложения этого документа, не внешние рыночные факты.
+
+## Implementation update — 2026-10-29 после v0.5
+
+Раздел 2 выше — историческая точка планирования. PR #1–6 слиты. n8n 2.45.5;
+v0.4 и новый scheduled pipeline v0.5 проверены пользователем на тестовой/рабочей
+Sheets. Windows task успешно выполнил production collection: total 190, matched 15,
+inserted 0, updated 15, cleanup completed, lock null, LastTaskResult 0. Повторный
+интервал ещё не является отдельно подтверждённым evidence. Backup/restore и image digest
+остаются отложенными по решению пользователя; инфраструктура не обновлялась.
+
+Начата B / APP-01: read-only Greenhouse form discovery, controlled HTTP upload,
+receipt binding и unknown/no-repeat tests. API submission без employer key недоступна
+для выбранной candidate-side конфигурации. Greenhouse hosted browser form — кандидат
+для следующего spike. Stage B не закрыт: реальный browser upload/submit и подтверждение
+работодателя ещё не проверены. [Матрица и инструкция](../research/application-channel-spike.md).

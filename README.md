@@ -74,3 +74,10 @@ npm.cmd run collector:automate
 Результат: `npm.cmd run collector:status`; остановка расписания:
 `npm.cmd run collector:schedule:remove`.
 [Полная инструкция и восстановление после ошибки](docs/operations/scheduled-collector-v0.5.md).
+
+### Техническая проверка откликов (APP-01)
+
+`npm.cmd run test:applications` проверяет синтетический upload, receipt и обрыв связи
+после отправки на локальной HTTP fixture. Ключей и n8n не требует, работодателям не пишет.
+Read-only требования Greenhouse: `npm.cmd run applications:inspect -- BOARD_TOKEN JOB_POST_ID`.
+Реальные автоотклики пока не реализованы. [Результаты и границы spike](docs/research/application-channel-spike.md).

@@ -54,3 +54,17 @@ active_in_feed сохранить как legacy значение. active_confirm
 3. Network/429/parse error и неполный ответ не означают закрытие. Отсутствие в одном полном feed лишь повод recheck; closed_confirmed требует отдельного доказательства. Правило recheck ещё не реализовано.
 4. User ID берётся из проверенной сессии backend; параметр клиента не является разрешением. Каждая приватная выборка scoped user_id; FK на профиль не должен позволять чужого владельца.
 5. Upsert на БД выполняется атомарно через unique constraint. В Sheets это не гарантировано: до миграции один writer и отсутствие overlap должны быть проверены отдельно.
+
+## APP-01: состояния и durable граница
+
+Controlled spike использует prepared → submitting → submitted/submission_unknown;
+required_action обозначает остановку до отправки. Submitted требует receipt, связанного
+с вакансией и hash пакета. Это ещё не продуктовая таблица applications.
+
+До E/F: application_packages связывает user_id, vacancy_id, profile_version,
+answers_version, artifact hashes; approval связывается с immutable package ID/hash.
+Application intent имеет уникальную политику на user+vacancy (включая допустимый reapply),
+а attempts хранят started_at, transport outcome, receipt/evidence и next_action.
+Unknown блокирует новую попытку до reconciliation. Уникальное ограничение и reservation
+в БД обязательны до side effect; in-memory state fixture не защищает от process crash.
+Точную PostgreSQL migration проектировать в DATA-01, не использовать внутреннюю БД n8n.
