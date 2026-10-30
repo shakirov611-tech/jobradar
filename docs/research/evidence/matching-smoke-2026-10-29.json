@@ -1,0 +1,136 @@
+{
+  "observedAt": "2026-10-29T20:49:11.178Z",
+  "mode": "public-read-only",
+  "policy": "personal-match-v1",
+  "profileFingerprint": "2032bf55c896afe114bd75f1d38964326e1765f4c7b424957f65d3ffb9f28aee",
+  "total": 754,
+  "roleCandidates": 53,
+  "reviewSize": 24,
+  "snapshotId": "3042370acc731063c2754d950544b994c96c784a4d60c4372d3e23345a5e2bcf",
+  "groups": {
+    "main": 7,
+    "unclear": 4,
+    "excluded": 7,
+    "other_roles": 6
+  },
+  "sources": [
+    {
+      "sourceId": "greenhouse_airbnb",
+      "provider": "greenhouse",
+      "company": "Airbnb",
+      "status": "passed",
+      "total": 194,
+      "matched": 18,
+      "views": {
+        "main": 8,
+        "unclear": 0,
+        "excluded": 10
+      },
+      "roleReview": 5,
+      "geography": {
+        "plausible": 0,
+        "review": 8,
+        "restricted": 10
+      }
+    },
+    {
+      "sourceId": "greenhouse_pandadoc",
+      "provider": "greenhouse",
+      "company": "PandaDoc",
+      "status": "passed",
+      "total": 8,
+      "matched": 6,
+      "views": {
+        "main": 1,
+        "unclear": 0,
+        "excluded": 5
+      },
+      "roleReview": 0,
+      "geography": {
+        "plausible": 0,
+        "review": 6,
+        "restricted": 0
+      }
+    },
+    {
+      "sourceId": "greenhouse_grafanalabs",
+      "provider": "greenhouse",
+      "company": "Grafana Labs",
+      "status": "passed",
+      "total": 129,
+      "matched": 9,
+      "views": {
+        "main": 4,
+        "unclear": 0,
+        "excluded": 5
+      },
+      "roleReview": 2,
+      "geography": {
+        "plausible": 0,
+        "review": 4,
+        "restricted": 5
+      }
+    },
+    {
+      "sourceId": "greenhouse_canonical",
+      "provider": "greenhouse",
+      "company": "Canonical",
+      "status": "passed",
+      "total": 314,
+      "matched": 15,
+      "views": {
+        "main": 14,
+        "unclear": 1,
+        "excluded": 0
+      },
+      "roleReview": 6,
+      "geography": {
+        "plausible": 1,
+        "review": 14,
+        "restricted": 0
+      }
+    },
+    {
+      "sourceId": "greenhouse_tide",
+      "provider": "greenhouse",
+      "company": "Tide",
+      "status": "passed",
+      "total": 96,
+      "matched": 4,
+      "views": {
+        "main": 0,
+        "unclear": 3,
+        "excluded": 1
+      },
+      "roleReview": 0,
+      "geography": {
+        "plausible": 0,
+        "review": 3,
+        "restricted": 1
+      }
+    },
+    {
+      "sourceId": "lever_superside",
+      "provider": "lever",
+      "company": "Superside",
+      "status": "passed",
+      "total": 13,
+      "matched": 1,
+      "views": {
+        "main": 1,
+        "unclear": 0,
+        "excluded": 0
+      },
+      "roleReview": 1,
+      "geography": {
+        "plausible": 1,
+        "review": 0,
+        "restricted": 0
+      }
+    }
+  ],
+  "humanLabels": 0,
+  "qualityMeasured": false,
+  "n8nCalled": false,
+  "sheetsWritten": false
+}

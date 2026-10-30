@@ -1,6 +1,6 @@
 {
   "name": "jobradar",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "private": true,
   "engines": {
     "node": ">=22"
@@ -25,7 +25,9 @@
     "collector:run:legacy": "node --env-file=.env.integration scripts/run-collector.cjs --legacy",
     "lint": "eslint . --max-warnings=0",
     "check:config": "node scripts/check-config.cjs",
-    "check": "npm run lint && npm run check:config && npm test"
+    "check": "npm run lint && npm run check:config && npm test",
+    "matching:review": "node --env-file=.env.integration scripts/preview-sources.cjs --review",
+    "matching:report": "node scripts/matching-report.cjs"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

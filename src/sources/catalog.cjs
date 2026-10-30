@@ -1,3 +1,7 @@
+const {createHash}=require('node:crypto');
+const {validateProfile,profileFingerprint}=require('../matching/profile.cjs');
+const {matchVacancy}=require('../matching/personal-match.cjs');
+const {descriptionText}=require('../matching/role-and-geography.cjs');
 const {classifyRole,classifyGeography}=require('../matching/role-and-geography.cjs');
 function sourceId(s){return s.provider+'_'+(s.provider==='lever'&&s.region==='eu'?'eu_':'')+s.board;}
 function validateSources(config) {
@@ -31,6 +35,7 @@ async function fetchFeed(s,options={}) {
  throw new Error('JR_SOURCE_PAGE_LIMIT');
 }
 function normalizeFeed(s,feed,observedAt,profile) {
+ validateProfile(profile);
  if(typeof observedAt!=='string'||!Number.isFinite(Date.parse(observedAt)))throw new Error('JR_INVALID_OBSERVATION_TIME');
  const jobs=s.provider==='greenhouse'?feed?.jobs:feed;
  if(!Array.isArray(jobs))throw new Error('JR_INVALID_FEED');
@@ -54,7 +59,9 @@ function normalizeFeed(s,feed,observedAt,profile) {
   const desc=gh?job.content:[job.description||'',...(Array.isArray(job.lists)?job.lists.map(x=>(x.text||'')+'\n'+(x.content||'')):[]),job.additional||''].join('\n');
   const role=classifyRole(title),geography=classifyGeography(location,work,profile,desc);
   const originalUrl=gh?job.absolute_url:job.hostedUrl;
-  catalog.push({vacancy_id:key,sourceId:sourceId(s),company:s.company,title,location,original_url:typeof originalUrl==='string'?originalUrl:'',role,geography});
+  const matching=matchVacancy({title,location,role,geography,description:desc},profile);
+  const text=descriptionText(desc);
+  catalog.push({matching,reviewText:text.slice(0,12000),reviewTextTruncated:text.length>12000,descriptionHash:createHash('sha256').update(text).digest('hex'),vacancy_id:key,sourceId:sourceId(s),company:s.company,title,location,original_url:typeof originalUrl==='string'?originalUrl:'',role,geography});
   if(!role.matched)continue;
   const date=Number.isSafeInteger(job.createdAt)&&job.createdAt>0&&job.createdAt<=8640000000000000?new Date(job.createdAt).toISOString():'';
   rows.push({vacancy_id:key,company:s.company,title,source:gh?'Greenhouse':'Lever',original_url:typeof originalUrl==='string'?originalUrl:'',canonical_url:typeof originalUrl==='string'?originalUrl:'',location,workplace_type:work,language:typeof job.language==='string'?job.language:'Unknown',published_at:gh?(typeof job.first_published==='string'?job.first_published:''):date,updated_at:gh?(typeof job.updated_at==='string'?job.updated_at:''):'',active_status:'active_in_feed',description:typeof desc==='string'?desc.slice(0,30000):'',last_seen_at:observedAt});
@@ -62,6 +69,7 @@ function normalizeFeed(s,feed,observedAt,profile) {
  return {rows,catalog,total:jobs.length};
 }
 async function collectSources(sources,profile,{fetchImpl=fetch,sleep,observedAt=new Date().toISOString(),loadFeed}={}) {
+ validateProfile(profile);
  const results=[];
  // Two read-only requests concurrently, bounded source/page counts.
  for(let start=0;start<sources.length;start+=2) {
@@ -70,6 +78,6 @@ async function collectSources(sources,profile,{fetchImpl=fetch,sleep,observedAt=
    catch(e){return {sourceId:sourceId(s),provider:s.provider,company:s.company,status:'failed',error:/^JR_[A-Z0-9_]+$/.test(e.message)?e.message:'JR_SOURCE_FAILED',total:0,matched:0,rows:[],catalog:[]};}
   }));results.push(...batch);
  }
- return {observedAt,sources:results.map(({rows,catalog,...rest})=>rest),total:results.reduce((n,r)=>n+r.total,0),rows:results.flatMap(r=>r.rows),catalog:results.flatMap(r=>r.catalog)};
+ return {observedAt,profile,profileFingerprint:profileFingerprint(profile),sources:results.map(({rows,catalog,...rest})=>rest),total:results.reduce((n,r)=>n+r.total,0),rows:results.flatMap(r=>r.rows),catalog:results.flatMap(r=>r.catalog)};
 }
 module.exports={sourceId,validateSources,feedUrl,fetchFeed,normalizeFeed,collectSources};

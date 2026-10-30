@@ -81,3 +81,9 @@ Description-aware work mode policy remote-evidence-v1 добавляет main/un
 и короткое evidence к локальному каталогу. Основной HTML view требует подтверждённого
 remote без выявленных country restrictions. Ролевой writer и историческая CRM сохранены;
 это не фильтрация last_seen/закрытие записей. [ADR 011](../adr/011-confirmed-remote-main-view.md).
+
+## v0.7.0 — MATCH-01, первая итерация
+
+После нормализации чистая функция сопоставляет профиль с названием, форматом и явными языковыми сигналами. Выход — объяснимый приоритет просмотра; бизнес-данные Sheets не меняются. Полный каталог получает profile fingerprint для воспроизводимости.
+
+Read-only preview дополнительно строит сбалансированный review snapshot и отдельный offline HTML. Оценки хранятся в браузере с JSON export/import; CLI сводит их только с исходным локальным снимком. Нет сервера, LLM, новой БД или передачи оценок третьим лицам. [ADR 012](../adr/012-explainable-matching-review.md).

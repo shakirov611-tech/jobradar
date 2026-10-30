@@ -4,5 +4,25 @@
   "remotePreferred": true,
   "rolePolicy": "product-growth-delivery-v1",
   "unknownPolicy": "review",
-  "languagePolicy": "do_not_infer_team_language_from_job_text"
+  "languagePolicy": "do_not_infer_team_language_from_job_text",
+  "matching": {
+    "policy": "personal-match-v1",
+    "primaryRoles": [
+      "product",
+      "growth",
+      "product_owner"
+    ],
+    "secondaryRoles": [
+      "delivery"
+    ],
+    "preferredSeniority": [
+      "senior",
+      "lead",
+      "head"
+    ],
+    "preferredTeamLanguages": [
+      "ru"
+    ],
+    "remoteOnly": true
+  }
 }
