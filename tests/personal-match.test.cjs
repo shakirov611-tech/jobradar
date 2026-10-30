@@ -21,3 +21,39 @@ async function collection(){return collectSources([source,{...source,board:'seco
 test('review sample is deterministic, diverse and includes excluded roles to detect false negatives',async()=>{const c=await collection(),s=buildReview(c);assert.equal(s.items.length,24);assert.equal(new Set(s.items.map(x=>x.vacancy_id)).size,24);assert.equal(new Set(s.items.map(x=>x.sourceId)).size,2);assert.deepEqual(new Set(s.items.map(x=>x.bucket)),new Set(['main','unclear','excluded','other_roles']));assert.equal(s.snapshotId,buildReview({...c,catalog:[...c.catalog].reverse()}).snapshotId);assert.equal(buildReview({...c,catalog:[]}).items.length,0);});
 test('review metrics separate uncertain and missing; reject stale, duplicate or foreign labels',async()=>{const s=buildReview(await collection());const labels={schemaVersion:1,snapshotId:s.snapshotId,profileFingerprint:s.profileFingerprint,policy:s.policy,answers:[{vacancy_id:s.items[0].vacancy_id,contentHash:s.items[0].contentHash,label:'uncertain',reason:''}]};const r=summarizeReview(s,labels);assert.equal(r.labeled,1);assert.equal(r.unlabeled,23);assert.equal(r.complete,false);assert.equal(r.priorityRejected,0);assert.equal(r.excludedButUseful,0);assert.throws(()=>summarizeReview(s,{...labels,snapshotId:'wrong'}),/MISMATCH/);assert.throws(()=>summarizeReview(s,{...labels,answers:[...labels.answers,...labels.answers]}),/INVALID/);assert.throws(()=>summarizeReview(s,{...labels,answers:[{...labels.answers[0],contentHash:'wrong'}]}),/INVALID/);const changed=structuredClone(s);changed.items[0].title='changed';assert.throws(()=>summarizeReview(changed,labels),/SNAPSHOT_CHANGED/);});
 test('offline review escapes hostile upstream fields and never includes unsafe job links',async()=>{const c=await collection();c.catalog[0].title='</script><script>window.pwned=true</script>';c.catalog[0].original_url='javascript:alert(1)';const s=buildReview({...c,catalog:[c.catalog[0]]});const html=renderReview(s);assert.ok(html.includes('&lt;script&gt;'));assert.ok(!html.includes('<script>window.pwned'));assert.ok(!html.includes('href="javascript:'));});
+test('review-derived conditions change decisions without altering the CRM payload',()=>{
+ for(const [location,text,decision] of [
+  ['Remote (Europe)','Remote-first approach with the option for hybrid work from our offices in Kyiv, Warsaw, and Lisbon.','priority'],
+  ['Office Based - Taipei, Taiwan','This role will be office based in Taipei, Taiwan. We are a remote-first company.','excluded'],
+  ['Germany (Remote)',"This is a fully remote position and we're considering candidates in Germany. We are a 100% remote company.",'excluded'],
+  ['India, Hyderabad','Work from abroad for up to 90 days annually.','review']
+ ]){
+  const n=normalize(undefined,location,text);assert.equal(n.catalog[0].matching.decision,decision);assert.equal(n.rows.length,1);assert.equal(n.rows[0].description,text);assert.equal(n.rows[0].location,location);assert.equal(n.rows[0].vacancy_id,'greenhouse_fixture_1');assert.equal(n.catalog[0].geography.policy,'remote-bg-v2');
+ }
+});
+test('catalog preserves structured workplace for future review reproducibility',()=>{
+ const n=normalizeFeed(source,{jobs:[{id:1,title:'Senior Product Manager',location:{name:'Europe'},content:'Our company is remote-first.',metadata:[{name:'Workplace Type',value:'hybrid'}]}]},at,profile);
+ assert.equal(n.catalog[0].workplaceType,'hybrid');assert.equal(n.catalog[0].matching.decision,'excluded');assert.equal(n.rows[0].workplace_type,'hybrid');
+ const s=buildReview({...n,profile,observedAt:at,sources:[]});assert.equal(s.items[0].workplaceType,'hybrid');assert.deepEqual(s.geographyPolicies,['remote-bg-v2']);
+});
+test('v2 dimensions and partial answers never rewrite overall labels or inflate completion',async()=>{
+ const s=buildReview(await collection());const answers=s.items.slice(0,2).map((row,i)=>({vacancy_id:row.vacancy_id,contentHash:row.contentHash,label:i===0?'unsuitable':null,reason:'',assessment:i===0?{roleInterest:'suitable',conditions:'uncertain',description:'unreadable'}:{roleInterest:'suitable'}}));
+ const labels={schemaVersion:2,snapshotId:s.snapshotId,profileFingerprint:s.profileFingerprint,policy:s.policy,answers};const original=JSON.stringify(labels);
+ const r=summarizeReview(s,labels);assert.equal(r.labeled,1);assert.equal(r.unlabeled,23);assert.equal(r.complete,false);assert.equal(r.assessments.roleInterest.suitable,2);assert.equal(r.assessments.conditions.uncertain,1);assert.equal(r.assessments.conditions.unrated,23);assert.equal(r.assessments.description.unreadable,1);assert.equal(r.matrix[s.items[0].matching.decision].unsuitable,1);assert.equal(JSON.stringify(labels),original);
+ for(const assessment of [{conditions:'allowed'},null,[],{score:10},JSON.parse('{"__proto__":"suitable"}')])assert.throws(()=>summarizeReview(s,{...labels,answers:[{...answers[0],assessment}]}),/INVALID_REVIEW_ASSESSMENT/);
+ assert.throws(()=>summarizeReview(s,{...labels,schemaVersion:1}),/INVALID_REVIEW_ASSESSMENT/);
+ assert.throws(()=>summarizeReview(s,{...labels,answers:[null]}),/INVALID_REVIEW_ANSWER/);
+});
+test('v1 labels remain unchanged and have unrated dimensions',async()=>{
+ const s=buildReview(await collection());const row=s.items[0];const labels={schemaVersion:1,snapshotId:s.snapshotId,profileFingerprint:s.profileFingerprint,policy:s.policy,answers:[{vacancy_id:row.vacancy_id,contentHash:row.contentHash,label:'unsuitable',reason:'Could not read the description'}]};const original=JSON.stringify(labels);
+ const r=summarizeReview(s,labels);assert.equal(r.matrix[row.matching.decision].unsuitable,1);assert.equal(r.assessments.description.unreadable,0);assert.equal(r.assessments.description.unrated,24);assert.equal(JSON.stringify(labels),original);
+ assert.ok(renderReview(s,{labels}).includes('Could not read the description'));
+ assert.throws(()=>renderReview(s,{labels:{...labels,snapshotId:'wrong'}}),/MISMATCH/);
+});
+test('reopening a saved review upgrades HTML only, preserving original labels and snapshot bytes',async t=>{
+ const fs=require('node:fs'),os=require('node:os'),path=require('node:path');const {createReport}=require('../scripts/matching-report.cjs');
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'jr-review-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+ const s=buildReview(await collection());const row=s.items[0];const labels={schemaVersion:1,snapshotId:s.snapshotId,profileFingerprint:s.profileFingerprint,policy:s.policy,answers:[{vacancy_id:row.vacancy_id,contentHash:row.contentHash,label:'suitable',reason:'</script><script>window.pwned=true</script>'}]};
+ const snapshotFile=path.join(dir,'review-'+s.snapshotId+'.json'),labelFile=path.join(dir,'labels.json');const snapshotBytes=JSON.stringify(s),labelBytes=JSON.stringify(labels);fs.writeFileSync(snapshotFile,snapshotBytes);fs.writeFileSync(labelFile,labelBytes);
+ const result=createReport(labelFile,{stateDir:dir,render:true});assert.equal(result.report.labeled,1);const html=fs.readFileSync(result.html,'utf8');assert.ok(html.includes('class="job-text" open'));assert.ok(!html.includes('<script>window.pwned'));assert.equal(fs.readFileSync(snapshotFile,'utf8'),snapshotBytes);assert.equal(fs.readFileSync(labelFile,'utf8'),labelBytes);
+});
