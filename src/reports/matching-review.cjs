@@ -1,10 +1,11 @@
 const {decisionLabels} = require('../matching/personal-match.cjs');
 const {validateAnswers,validateLabels} = require('../matching/review.cjs');
+const {createHash} = require('node:crypto');
 const escape = value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function safeLink(row) {try {const u=new URL(row.original_url);if(u.protocol==='https:'&&!u.username&&!u.password)return `<a href="${escape(u.href)}" target="_blank" rel="noopener noreferrer">Оригинал вакансии</a>`;}catch{}return '';}
 // Embedded in the offline report; no network, no application submission.
 function reviewControls(snapshot,checkAnswers,initialLabels) {
-  const key='jobradar-review-'+snapshot.snapshotId;
+  const key='jobradar-review-'+snapshot.snapshotId+(snapshot.importFingerprint?'-'+snapshot.importFingerprint:'');
   const status=document.querySelector('#save-status');
   const controls=[...document.querySelectorAll('article')];
   function exportValue() {
@@ -30,7 +31,9 @@ function reviewControls(snapshot,checkAnswers,initialLabels) {
     });
   }
   let message='';
-  try {if(initialLabels)restore(initialLabels);else {const saved=localStorage.getItem(key);if(saved)restore(JSON.parse(saved));}}catch{message='Сохранённые оценки не удалось загрузить. Используйте скачанный JSON.';}
+  let saved;
+  try {saved=localStorage.getItem(key);}catch{}
+  try {if(saved)restore(JSON.parse(saved));else if(initialLabels)restore(initialLabels);}catch{if(initialLabels)restore(initialLabels);message='Сохранённые оценки не удалось загрузить. Используйте скачанный JSON.';}
   for(const el of controls)el.addEventListener('input',update);
   document.querySelector('#export').addEventListener('click',()=>{
     const blob=new Blob([JSON.stringify(exportValue(),null,2)],{type:'application/json'});
@@ -51,7 +54,7 @@ function renderReview(snapshot,{labels}={}) {
   const fitOptions=[['suitable','Да'],['unsuitable','Нет'],['uncertain','Нужно уточнить']];
   const dimensions=select('roleInterest','Роль интересна?',fitOptions)+select('conditions','Условия подходят?',fitOptions)+select('description','Описание удалось прочитать?',[['readable','Да'],['unreadable','Нет']]);
   const cards=snapshot.items.map((row,i)=>`<article><h2>${i+1}. ${escape(row.title)}</h2><p>${escape(row.company)} · ${escape(row.location)}</p><p>Снимок: ${escape(snapshot.observedAt)}. Проверьте актуальность по оригиналу.</p><details class="job-text" open><summary>Описание вакансии${row.reviewTextTruncated?' (фрагмент)':''}</summary><p class="description" tabindex="0">${escape(row.reviewText||'Описание не получено. Попробуйте оригинал; если текста нет, отметьте это ниже.')}</p>${row.reviewTextTruncated?'<p>Показаны первые 12000 символов. Остальные условия могут быть в оригинале.</p>':''}</details>${safeLink(row)}<p class="hint">Если оригинал открывает только форму отклика, прочитайте сохранённое описание выше. Интерес к роли и доступность работы из вашей страны — разные оценки.</p><fieldset><legend>Ваша оценка вакансии ${i+1}</legend><label><input type="radio" name="label-${i}" value="suitable">Подходит</label><label><input type="radio" name="label-${i}" value="unsuitable">Не подходит</label><label><input type="radio" name="label-${i}" value="uncertain">Уточнить</label><div class="dimensions">${dimensions}</div><p class="hint">Уточнения необязательны. Они сохраняются даже без общей оценки; отсутствие описания не означает, что роль не подходит.</p><label>Причина (необязательно)<textarea maxlength="500" rows="2"></textarea></label></fieldset><details class="model-decision"><summary>Решение алгоритма — открыть после своей оценки</summary><p>${escape(decisionLabels[row.matching.decision])}</p>${['reasons','gaps','unknowns','exclusions'].map(k=>row.matching[k].map(x=>`<p>${escape(x.text)} <small>${escape(x.evidence)}</small></p>`).join('')).join('')}</details></article>`).join('');
-  const data={snapshotId:snapshot.snapshotId,profileFingerprint:snapshot.profileFingerprint,policy:snapshot.policy,items:snapshot.items.map(x=>({vacancy_id:x.vacancy_id,contentHash:x.contentHash}))};
+  const data={snapshotId:snapshot.snapshotId,profileFingerprint:snapshot.profileFingerprint,policy:snapshot.policy,importFingerprint:labels?createHash('sha256').update(JSON.stringify(labels)).digest('hex'):null,items:snapshot.items.map(x=>({vacancy_id:x.vacancy_id,contentHash:x.contentHash}))};
   const embed=value=>JSON.stringify(value).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
   const safeData=embed(data);
   const originalNote=labels?'<p>Открыт сохранённый снимок: вакансии и решения алгоритма не пересчитаны. Оценки загружены из выбранного файла.</p>':'';

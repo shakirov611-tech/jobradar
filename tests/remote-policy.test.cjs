@@ -36,6 +36,7 @@ test('role office requirement and office location outrank generic company remote
  assert.equal(geo('Remote','remote',p,text).workMode,'onsite');
  assert.equal(geo('Office Based - Taipei, Taiwan','Unknown',p,'We are a remote-first company.').workMode,'onsite');
  assert.equal(geo('Europe','Unknown',p,'Our company is remote-first with very few office based roles.').workMode,'remote');
+ for(const text of ['The position requires working on-site.','This role requires you to be office based.','Role is office-based.'])assert.equal(geo('Europe','Unknown',p,text+' Our company is remote-first.').workMode,'onsite',text);
 });
 test('contradictory role remote and structured office stay unclear',()=>{
  const g=geo('Office Based - Taipei, Taiwan','Unknown',p,'This role is fully remote.');
