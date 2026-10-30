@@ -13,3 +13,30 @@ test('review labels survive reload, export and validated import; mismatched impo
  await first.getByLabel('Не подходит',{exact:true}).check();await page.locator('#import').setInputFiles({name:'labels.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(labels))});await page.waitForFunction(()=>document.querySelector('#import-status').textContent==='Оценки загружены.');assert.equal(await first.getByLabel('Подходит',{exact:true}).isChecked(),true);
  await page.locator('#import').setInputFiles({name:'wrong.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({...labels,snapshotId:'wrong'}))});await page.waitForFunction(()=>document.querySelector('#import-status').textContent.includes('не подходит'));assert.match(await page.locator('#import-status').textContent(),/не подходит/);assert.equal(await first.getByLabel('Подходит',{exact:true}).isChecked(),true);
 });
+test('review shows saved descriptions immediately and keeps model decisions collapsed',async t=>{
+ const c=data();c.catalog[0].reviewText='Remote-first approach with the option for hybrid work.';c.catalog[0].reviewTextTruncated=true;c.catalog[1].reviewText='';
+ const snapshot=buildReview(c);const browser=await chromium.launch({headless:true});t.after(()=>browser.close());const page=await browser.newPage();await page.setContent(renderReview(snapshot));
+ assert.equal(await page.locator('details.job-text[open]').count(),3);assert.equal(await page.locator('details.model-decision[open]').count(),0);
+ assert.equal(await page.getByText('Remote-first approach with the option for hybrid work.',{exact:true}).isVisible(),true);
+ assert.equal(await page.getByText('Описание не получено. Попробуйте оригинал; если текста нет, отметьте это ниже.').isVisible(),true);
+ assert.equal(await page.getByText('Показаны первые 12000 символов. Остальные условия могут быть в оригинале.').isVisible(),true);
+});
+test('partial dimensions survive reload/export; legacy import stays raw and invalid dimensions are atomic',async t=>{
+ const snapshot=buildReview(data()),html=renderReview(snapshot);
+ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/html; charset=utf-8');res.end(html);});await new Promise(r=>server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>server.close(r)));
+ const browser=await chromium.launch({headless:true});t.after(()=>browser.close());const page=await browser.newPage();await page.goto('http://127.0.0.1:'+server.address().port);const first=page.locator('article').first();
+ await first.getByLabel('Роль интересна?').selectOption('suitable');await first.getByLabel('Условия подходят?').selectOption('uncertain');await first.getByLabel('Описание удалось прочитать?').selectOption('unreadable');
+ await page.reload();assert.equal(await first.getByLabel('Роль интересна?').inputValue(),'suitable');assert.equal(await first.getByLabel('Условия подходят?').inputValue(),'uncertain');assert.equal(await first.getByLabel('Описание удалось прочитать?').inputValue(),'unreadable');assert.equal(await page.locator('#progress').textContent(),'Оценено: 0 из 3');
+ const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Скачать оценки JSON'}).click();const download=await downloadPromise;const labels=JSON.parse(fs.readFileSync(await download.path(),'utf8'));
+ assert.equal(labels.schemaVersion,2);assert.equal(labels.answers[0].label,null);const result=summarizeReview(snapshot,labels);assert.equal(result.labeled,0);assert.equal(result.assessments.roleInterest.suitable,1);assert.equal(result.assessments.description.unreadable,1);
+ const legacy={...labels,schemaVersion:1,answers:labels.answers.map(a=>({vacancy_id:a.vacancy_id,contentHash:a.contentHash,label:'unsuitable',reason:'No description on original page'}))};
+ await page.locator('#import').setInputFiles({name:'legacy.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(legacy))});await page.waitForFunction(()=>document.querySelector('#import-status').textContent==='Оценки загружены.');
+ assert.equal(await first.getByLabel('Не подходит',{exact:true}).isChecked(),true);assert.equal(await first.getByLabel('Описание удалось прочитать?').inputValue(),'');assert.equal(await first.getByLabel('Причина (необязательно)').inputValue(),'No description on original page');
+ const invalid={...labels,answers:labels.answers.map(a=>({...a,label:'suitable',assessment:{conditions:'approved'}}))};
+ await page.locator('#import').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(invalid))});await page.waitForFunction(()=>document.querySelector('#import-status').textContent.includes('не подходит'));assert.equal(await first.getByLabel('Не подходит',{exact:true}).isChecked(),true);assert.equal(await first.getByLabel('Описание удалось прочитать?').inputValue(),'');
+});
+test('reopened old review displays supplied v1 labels without reinterpretation or script execution',async t=>{
+ const snapshot=buildReview(data());const row=snapshot.items[0];const labels={schemaVersion:1,snapshotId:snapshot.snapshotId,profileFingerprint:snapshot.profileFingerprint,policy:snapshot.policy,answers:[{vacancy_id:row.vacancy_id,contentHash:row.contentHash,label:'unsuitable',reason:'</script><script>window.pwned=true</script>'}]};
+ const browser=await chromium.launch({headless:true});t.after(()=>browser.close());const page=await browser.newPage();await page.setContent(renderReview(snapshot,{labels}));const first=page.locator('article').first();
+ assert.equal(await first.getByLabel('Не подходит',{exact:true}).isChecked(),true);assert.equal(await first.getByLabel('Причина (необязательно)').inputValue(),labels.answers[0].reason);assert.equal(await first.getByLabel('Описание удалось прочитать?').inputValue(),'');assert.equal(await page.evaluate(()=>window.pwned),undefined);assert.equal(await page.locator('#progress').textContent(),'Оценено: 1 из 3');
+});

@@ -97,3 +97,11 @@ search-profile.json сохраняет version=1; optional matching содерж
 В catalog добавлены matching {policy,decision,family,seniority,languages,reasons,gaps,unknowns,exclusions}, reviewText (до 12000 символов), reviewTextTruncated и descriptionHash (SHA-256 нормализованного текста анализа до 120000 символов). Языковой сигнал хранит тип team/requirement и evidence; язык текста не является языком команды. Не подменяет прежнее geography.teamLanguage=unknown подтверждённым фактом.
 
 Review snapshot хранит profile/fingerprint, policy, observedAt, sourceResults и records с contentHash; snapshotId — SHA-256 содержимого. Labels schemaVersion=1 с snapshotId, profileFingerprint, policy, answers {vacancy_id,contentHash,label,reason}. label: suitable/unsuitable/uncertain, reason до 500 символов. Чужие/повторные/устаревшие ответы отклоняются. Результат содержит матрицу решений, unlabeled/uncertain отдельно; это не population accuracy. Эти поля не пишутся в Sheets.
+
+## Условия и оценки v0.7.1
+
+`geography.policy=remote-bg-v2` версионирует правила условий отдельно от personal-match-v1. Catalog также хранит исходный `workplaceType` (строка или Unknown); CRM поле workplace_type не меняется. Новый snapshot перечисляет `geographyPolicies`; отсутствие этого поля в прежних снимках допускается. Непомеченные старые geography соответствуют remote-bg-v1. Fingerprint настроек и исходные snapshots не мигрируют.
+
+Labels schemaVersion=2 сохраняет прежние привязки. `label` — suitable/unsuitable/uncertain либо null для частичного ответа; reason остаётся строкой до 500 символов. Необязательный `assessment` содержит только известные ключи: `roleInterest` и `conditions` (suitable/unsuitable/uncertain), `description` (readable/unreadable). Отсутствующее измерение = unrated; это не uncertain и не отказ.
+
+Новый reader принимает v1 без assessment и v2. Матрица отражает только общие labels; частичные ответы не увеличивают labeled/complete. Отдельный assessments содержит счётчики каждого измерения, включая unrated. Комментарии старых labels не используются для вывода новых измерений. Все ответы проверяются одним валидатором перед применением в HTML или CLI. [ADR 013](adr/013-role-conditions-and-review-dimensions.md).

@@ -61,7 +61,7 @@ function normalizeFeed(s,feed,observedAt,profile) {
   const originalUrl=gh?job.absolute_url:job.hostedUrl;
   const matching=matchVacancy({title,location,role,geography,description:desc},profile);
   const text=descriptionText(desc);
-  catalog.push({matching,reviewText:text.slice(0,12000),reviewTextTruncated:text.length>12000,descriptionHash:createHash('sha256').update(text).digest('hex'),vacancy_id:key,sourceId:sourceId(s),company:s.company,title,location,original_url:typeof originalUrl==='string'?originalUrl:'',role,geography});
+  catalog.push({matching,reviewText:text.slice(0,12000),reviewTextTruncated:text.length>12000,descriptionHash:createHash('sha256').update(text).digest('hex'),vacancy_id:key,sourceId:sourceId(s),company:s.company,title,location,workplaceType:work,original_url:typeof originalUrl==='string'?originalUrl:'',role,geography});
   if(!role.matched)continue;
   const date=Number.isSafeInteger(job.createdAt)&&job.createdAt>0&&job.createdAt<=8640000000000000?new Date(job.createdAt).toISOString():'';
   rows.push({vacancy_id:key,company:s.company,title,source:gh?'Greenhouse':'Lever',original_url:typeof originalUrl==='string'?originalUrl:'',canonical_url:typeof originalUrl==='string'?originalUrl:'',location,workplace_type:work,language:typeof job.language==='string'?job.language:'Unknown',published_at:gh?(typeof job.first_published==='string'?job.first_published:''):date,updated_at:gh?(typeof job.updated_at==='string'?job.updated_at:''):'',active_status:'active_in_feed',description:typeof desc==='string'?desc.slice(0,30000):'',last_seen_at:observedAt});

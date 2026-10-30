@@ -16,5 +16,6 @@
 | [010 Multi-source каталог](010-multi-source-catalog.md) | Accepted for implementation |
 | [011 Подтверждённый remote](011-confirmed-remote-main-view.md) | Accepted |
 | [012 Подбор и оценка качества](012-explainable-matching-review.md) | Accepted for implementation |
+| [013 Условия позиции и раздельные оценки](013-role-conditions-and-review-dimensions.md) | Accepted |
 
 Каждый ADR: контекст → решение → альтернативы → последствия → условие пересмотра. Шаблон: template.md.

@@ -1,12 +1,12 @@
 # JobRadar
 
-Автоматизированный поиск работы. Текущая версия: **v0.7.0**. [Описание выпуска](docs/releases/v0.7.0.md).
+Автоматизированный поиск работы. Текущая версия: **v0.7.1**. [Описание выпуска](docs/releases/v0.7.1.md).
 
 ## Текущее состояние
 
 Локальный Node collector читает Greenhouse/Lever; n8n в Docker на Windows/WSL2 обновляет Google Sheets. Есть расписание, дедупликация, first_seen/last_seen, отчёты и тесты. HTML обзор по умолчанию показывает подтверждённый remote; CRM сохраняет весь ролевой каталог.
 
-113 Node-тестов и 7 браузерных тестов прошли в CI для кода v0.7.0. Локально подтверждены v0.4 и первый scheduled run v0.5; установка последующих версий и отдельная проверка multi-source writer ещё не зафиксированы. Персональный подбор v0.7.0 добавляет объяснения и выборку для оценки качества. Генерация резюме и реальные автоотклики пока не реализованы.
+Автоматические проверки: ESLint, JSON/config contracts, Node-тесты и browser fixtures; [порядок и границы CI](docs/operations/ci.md). Локально подтверждены v0.4 и первый scheduled run v0.5; установка последующих версий и отдельная проверка multi-source writer ещё не зафиксированы. Персональный подбор добавляет объяснения и выборку для оценки качества. Разобраны 23 пользовательские оценки; v0.7.1 исправляет условия формата/географии и показ описаний. Генерация резюме и реальные автоотклики пока не реализованы.
 
 Начать с [актуального roadmap](docs/product/roadmap.md), [backlog](docs/product/backlog.md) и [плана этапов](docs/product/implementation-plan-v1.md). Текущий этап — качество персонального подбора (C / MATCH-01); следующий шаг — пользовательская оценка выборки.
 
@@ -22,7 +22,7 @@ npm test
 
 ## Обновление и локальная проверка
 
-[Инструкция v0.7.0](docs/operations/matching-v0.7.md), [remote-выдача v0.6.1](docs/operations/remote-view-v0.6.1.md), [переход на multi-source](docs/operations/multi-source-v0.6.md), [интеграционные тесты](docs/operations/integration-tests.md).
+[Инструкция v0.7.1](docs/operations/matching-v0.7.md), [remote-выдача v0.6.1](docs/operations/remote-view-v0.6.1.md), [переход на multi-source](docs/operations/multi-source-v0.6.md), [интеграционные тесты](docs/operations/integration-tests.md).
 Сохранить .env.integration и .collector-state. Облако не обращается к локальному n8n напрямую.
 [Changelog](CHANGELOG.md) и [порядок выпуска](docs/operations/releases.md). Разделы ниже о ранних версиях описывают историю изменений.
 
@@ -127,10 +127,10 @@ Google Sheets сохраняет весь ролевой каталог: стр�
 Push и PR запускают ESLint, проверку конфигураций, unit/fixture integration и отдельные browser tests.
 Локально: `npm.cmd run check` после npm ci. [Границы CI и реальные integration tests](docs/operations/ci.md).
 
-## Персональный подбор v0.7.0
+## Персональный подбор v0.7.1
 
 После обновления файлов, сохранив `.env.integration` и `.collector-state`, выполните `npm.cmd run matching:review -- --open`.
 Откроется выборка до 24 вакансий: отметьте «Подходит / Не подходит / Уточнить» и скачайте оценки JSON.
 `npm.cmd run collector:preview -- --open` открывает основной обзор с объяснениями.
 Профиль — `config/search-profile.json`; роли, уровень и язык команды видны в обзоре.
-[Правила, экспорт оценок и ограничения](docs/operations/matching-v0.7.md). Качество не измерено до пользовательской разметки.
+[Правила, экспорт оценок и ограничения](docs/operations/matching-v0.7.md). [Первая разметка разобрана](docs/research/matching-review-2026-10-30.md); точность на всём рынке не установлена. Сохранённые оценки v1 читаются без изменений, повторять их не требуется. Чтобы обновить HTML старой выборки и загрузить оценки: `npm.cmd run matching:report -- "C:\путь\labels.json" --open`.
