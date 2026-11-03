@@ -28,7 +28,8 @@
     "check": "npm run lint && npm run check:config && npm test",
     "matching:review": "node --env-file=.env.integration scripts/preview-sources.cjs --review",
     "matching:report": "node scripts/matching-report.cjs",
-    "resume:prepare": "node scripts/prepare-resume.cjs"
+    "resume:prepare": "node scripts/prepare-resume.cjs",
+    "resume:catalog": "node scripts/resume-catalog.cjs"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

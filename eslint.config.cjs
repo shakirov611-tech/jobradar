@@ -6,6 +6,6 @@ module.exports = [
  { files: ['src/normalization/*.n8n.js'], languageOptions:{globals:{$input:'readonly',$:'readonly'}} },
  { files: ['src/applications/browser-dry-run.cjs'], languageOptions:{globals:{document:'readonly',HTMLFormElement:'readonly'}} },
  { files: ['src/reports/matching-review.cjs'], languageOptions:{globals:{document:'readonly',localStorage:'readonly'}} },
- { files: ['src/resumes/render.cjs'], languageOptions:{globals:{document:'readonly'}} },
+ { files: ['src/resumes/render.cjs'], languageOptions:{globals:{document:'readonly',localStorage:'readonly'}} },
  { files: ['browser/tests/*.cjs'], languageOptions:{globals:{window:'readonly',document:'readonly'}} }
 ];
