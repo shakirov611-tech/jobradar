@@ -10,7 +10,9 @@ function prepare(profileFile,snapshotFile,vacancyId,{root=path.resolve(__dirname
  const rows=Array.isArray(snapshot.items)?snapshot.items:Array.isArray(snapshot.catalog)?snapshot.catalog:[snapshot];
  const matches=rows.filter(r=>r.vacancy_id===vacancyId);
  if(matches.length!==1)throw Error('JR_RESUME_VACANCY_NOT_UNIQUE');
- const pkg=buildPackage(profile,matches[0]);
+ return writePackage(buildPackage(profile,matches[0]),root);
+}
+function writePackage(pkg,root=path.resolve(__dirname,'..')) {
  const dir=path.join(root,'exports-private','resumes',pkg.packageId);
  fs.mkdirSync(dir,{recursive:true,mode:0o700});
  const html=path.join(dir,'review.html');
@@ -25,4 +27,4 @@ function main(args=process.argv.slice(2)) {
  if(open){const url=pathToFileURL(result.html).href;const child=process.platform==='win32'?spawn('rundll32',['url.dll,FileProtocolHandler',url],{detached:true,stdio:'ignore'}):spawn(process.platform==='darwin'?'open':'xdg-open',[url],{detached:true,stdio:'ignore'});child.on('error',()=>console.error('Open the review.html path above manually.'));child.unref();}
 }
 if(require.main===module)try{main();}catch(e){console.error(/^JR_|^Usage:/.test(e.message)?e.message:'Resume preparation failed. Check local JSON files; personal data has not been logged.');process.exitCode=1;}
-module.exports={prepare,main};
+module.exports={prepare,main,writePackage,read};

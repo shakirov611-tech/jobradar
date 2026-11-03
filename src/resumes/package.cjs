@@ -48,8 +48,9 @@ function buildPackage(profile, vacancy) {
  return {...body,packageId:hash(body)};
 }
 // Same checks in browser and Node; selections cannot create or rewrite a fact.
-function validateSelection(pkg, selection) {
- if(!selection||selection.packageId!==pkg.packageId||!Array.isArray(selection.factIds)||!selection.factIds.length||new Set(selection.factIds).size!==selection.factIds.length||!Array.isArray(selection.approvedFactIds)) throw new Error('JR_INVALID_RESUME_SELECTION');
+function validateSelection(pkg, selection, allowEmpty=false) {
+ if(!selection||selection.packageId!==pkg.packageId||!Array.isArray(selection.factIds)||(!allowEmpty&&!selection.factIds.length)||new Set(selection.factIds).size!==selection.factIds.length||!Array.isArray(selection.approvedFactIds)) throw new Error('JR_INVALID_RESUME_SELECTION');
+ if(new Set(selection.approvedFactIds).size!==selection.approvedFactIds.length||selection.approvedFactIds.some(id=>!selection.factIds.includes(id))) throw new Error('JR_INVALID_RESUME_SELECTION');
  const selected=selection.factIds.map(id=>pkg.facts.find(f=>f.id===id));
  if(selected.some(f=>!f||f.blocked||(!f.approved&&!selection.approvedFactIds.includes(f.id)))) throw new Error('JR_UNAPPROVED_RESUME_FACT');
  return selected;
