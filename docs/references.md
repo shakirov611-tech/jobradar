@@ -1,9 +1,12 @@
-# Источники и пределы проверки
+# Внешние источники и пределы проверки
 
-Проверено 29.10.2026 по официальным материалам. Они дополняют аудит артефактов, а не подтверждают текущий runtime.
+Основной справочник существующих job-source адаптеров — [source coverage](research/source-coverage-v0.6.md#справочник-существующих-адаптеров): endpoints, ограничения клиента, ошибки, дата сверки и официальные ссылки. Не копировать сюда API-контракты.
 
-- [n8n: Docker](https://docs.n8n.io/hosting/installation/docker/): постоянное хранение состояния и варианты DB.
-- [n8n: Backup and restore, официальный репозиторий документации](https://github.com/n8n-io/n8n-docs/blob/main/docs/deploy/host-n8n/keep-n8n-running/backup-and-restore.md): полный backup шире workflow export; ключ шифрования нужен для credentials; SQLite snapshot должен быть согласованным.
-- [n8n: Which license do I need?](https://support.n8n.io/article/can-i-use-your-license-for-my-use-case): различаются выдача результатов клиентам и предоставление возможности создавать/конфигурировать workflows. Применимость к окончательному JobRadar UX требует отдельной оценки до коммерческого pilot, без вывода «любой SaaS разрешён».
+Для изменения n8n-интеграции:
 
-Greenhouse endpoint взят из E2, а поля — из E4. Актуальные API terms, quota и pagination в рамках этого документального аудита не проверялись; проверка — prerequisite для изменения adapter. Google Sheets node поведение должно быть проверено для фактической версии n8n по локальному экспорту.
+- [Официальный n8n REST API](https://docs.n8n.io/api/) — вход в authentication/reference; страница проверена 2026-11-03. Применимость отдельного endpoint зависит от установленной версии.
+- Текущий код использует локальный `/api/v1/workflows`, создание, activate/deactivate и удаление workflow, затем собственный production webhook. Реальные retry/cleanup правила — в scripts и [contracts](contracts.md), тестовый setup — в [integration-tests](operations/integration-tests.md).
+- [n8n Docker](https://docs.n8n.io/hosting/installation/docker/) и [backup/restore](https://github.com/n8n-io/n8n-docs/blob/main/docs/deploy/host-n8n/keep-n8n-running/backup-and-restore.md) — источники первоначального аудита 2026-10-29; перед изменением установки проверить заново. [Local runbook](operations/local-runbook.md) содержит границы безопасного переноса.
+- [n8n licensing](https://support.n8n.io/article/can-i-use-your-license-for-my-use-case) — историческая ссылка для отдельной оценки окончательного hosted UX до коммерческого пилота; этот аудит не подтверждает правовой вывод.
+
+Официальная документация дополняет код и версионные тесты, но не является доказательством запуска на ПК. Не считать старую ссылку или успешный fixture-тест достаточной проверкой актуальной версии API.

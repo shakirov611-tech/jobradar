@@ -17,7 +17,8 @@
 | [011 Подтверждённый remote](011-confirmed-remote-main-view.md) | Accepted |
 | [012 Подбор и оценка качества](012-explainable-matching-review.md) | Accepted for implementation |
 | [013 Условия позиции и раздельные оценки](013-role-conditions-and-review-dimensions.md) | Accepted |
+| [014 Локальное резюме из фактов](014-local-facts-resume-review.md) | Accepted for first iteration |
 
 Каждый ADR: контекст → решение → альтернативы → последствия → условие пересмотра. Шаблон: template.md.
 
-- [014 — Локальное резюме из фактов](014-local-facts-resume-review.md) — Accepted for first iteration.
+Читайте только ADR затронутой области; маршруты есть в [карте кода](../architecture/codebase-map.md). ADR хранит причину и границы решения, текущую готовность — [roadmap](../product/roadmap.md). Не создавайте запись для обычного исправления, изменения текста или обновления навигации. У значимого решения должны быть контекст, подход, альтернативы/причины отказа, ограничения и условие пересмотра.
