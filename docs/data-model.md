@@ -105,3 +105,7 @@ Review snapshot хранит profile/fingerprint, policy, observedAt, sourceResu
 Labels schemaVersion=2 сохраняет прежние привязки. `label` — suitable/unsuitable/uncertain либо null для частичного ответа; reason остаётся строкой до 500 символов. Необязательный `assessment` содержит только известные ключи: `roleInterest` и `conditions` (suitable/unsuitable/uncertain), `description` (readable/unreadable). Отсутствующее измерение = unrated; это не uncertain и не отказ.
 
 Новый reader принимает v1 без assessment и v2. Матрица отражает только общие labels; частичные ответы не увеличивают labeled/complete. Отдельный assessments содержит счётчики каждого измерения, включая unrated. Комментарии старых labels не используются для вывода новых измерений. Все ответы проверяются одним валидатором перед применением в HTML или CLI. [ADR 013](adr/013-role-conditions-and-review-dimensions.md).
+
+## Resume package v1 (локальная итерация D)
+
+Приватный facts draft v1 импортируется без мутации. Package содержит profileHash, vacancyHash, packageId, titles, facts со статусами/sourceRefs; источник approval — пользователь. Export manifest содержит packageId, хеши, reviewedAt, выбранные factIds и approvedFactIds для фактов, подтверждённых только в этом документе. Не является application approval. [ADR 014](adr/014-local-facts-resume-review.md).
