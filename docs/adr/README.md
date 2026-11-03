@@ -19,3 +19,5 @@
 | [013 Условия позиции и раздельные оценки](013-role-conditions-and-review-dimensions.md) | Accepted |
 
 Каждый ADR: контекст → решение → альтернативы → последствия → условие пересмотра. Шаблон: template.md.
+
+- [014 — Локальное резюме из фактов](014-local-facts-resume-review.md) — Accepted for first iteration.
