@@ -110,3 +110,8 @@ Labels schemaVersion=2 сохраняет прежние привязки. `labe
 ## Resume package v1 (локальная итерация D)
 
 Приватный facts draft v1 импортируется без мутации. Package содержит profileHash, vacancyHash, packageId, titles, facts со статусами/sourceRefs; источник approval — пользователь. Export manifest содержит packageId, хеши, reviewedAt, выбранные factIds и approvedFactIds для фактов, подтверждённых только в этом документе. Не является application approval. [ADR 014](adr/014-local-facts-resume-review.md).
+
+
+## Language analysis / персональная проекция v1
+
+Vacancy содержит независимый от пользователя `language_analysis`. UserVacancyMatch содержит `language_fit` и profile fingerprint; оценка не является общей характеристикой вакансии. CandidateProfile/SearchPreferences задаёт `language_preferences`; ручная поправка хранится отдельно как будущий owner-scoped review. В текущем single-user MVP это локальные JSON и две опциональные JSON-колонки CRM. Нормативная schema — `src/language/contract.cjs`, описание полей и границ — [language-intelligence](operations/language-intelligence.md). Company/team signal пока только пример контракта `config/examples/company-language-signals.json`; автоматического наследования в вакансии нет.

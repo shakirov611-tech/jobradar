@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {settings} = require('./multi-collector.cjs');
 function check(root = path.resolve(__dirname, '..')) {
+ require('../src/language/analyzer.cjs').validateConfig(JSON.parse(fs.readFileSync(path.join(root,'config/language-analysis.json'),'utf8')));
  let count = 0;
  function scan(dir) {
   for (const e of fs.readdirSync(dir, {withFileTypes:true})) {

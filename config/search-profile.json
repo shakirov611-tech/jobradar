@@ -6,7 +6,7 @@
   "unknownPolicy": "review",
   "languagePolicy": "do_not_infer_team_language_from_job_text",
   "matching": {
-    "policy": "personal-match-v1",
+    "policy": "personal-match-v2",
     "primaryRoles": [
       "product",
       "growth",
@@ -24,5 +24,29 @@
       "ru"
     ],
     "remoteOnly": true
+  },
+  "language_preferences": {
+    "preferred_team_languages": [
+      {
+        "language": "ru",
+        "weight": 1.0
+      },
+      {
+        "language": "en",
+        "weight": 0.35
+      }
+    ],
+    "candidate_languages": [
+      {
+        "language": "ru",
+        "level": "native"
+      },
+      {
+        "language": "en",
+        "level": "A2"
+      }
+    ],
+    "unknown_team_language_policy": "review",
+    "preference_strength": "high"
   }
 }

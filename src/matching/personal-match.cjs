@@ -1,4 +1,5 @@
-const {descriptionText} = require('./role-and-geography.cjs');
+const {languageInput,rulesAnalysis}=require('../language/analyzer.cjs');
+const {languageFit}=require('../language/personalize.cjs');
 const {validateProfile} = require('./profile.cjs');
 const decisionLabels = {priority:'Сначала посмотреть',review:'Нужно уточнить',excluded:'Есть противоречие'};
 function roleFamily(title, role) {
@@ -14,29 +15,16 @@ function seniority(title) {
   return {value:'unknown',evidence:''};
 }
 function languageSignals(description) {
-  const clauses = descriptionText(description).split(/[.;!?]/);
-  const team = [], requirements = [];
-  for (const clause of clauses) {
-    const c = clause.trim();
-    // Negative and ambiguous clauses remain unknown, never become positive evidence.
-    if (!c || /\b(?:not|no|without)\b|не требуется|не является/iu.test(c)) continue;
-    for (const [code, name] of [['ru','Russian'],['en','English'],['bg','Bulgarian']]) {
-      const teamPattern = new RegExp('\\b(?:our team (?:works|communicates) in '+name+'|'+name+' is (?:our|the) (?:working|team) language|(?:we are |our team is )a '+name+'[- ]speaking team)\\b', 'i');
-      const requirementPattern = new RegExp('\\b(?:'+name+' (?:is )?(?:required|mandatory)|(?:fluent|fluency|proficient|proficiency) in '+name+'|(?:must|required to) speak '+name+')\\b','i');
-      if (teamPattern.test(c) && !team.some(x=>x.language===code)) team.push({language:code,evidence:c.slice(0,240)});
-      if (requirementPattern.test(c) && !requirements.some(x=>x.language===code)) requirements.push({language:code,evidence:c.slice(0,240)});
-    }
-    if (/рабочий язык (?:нашей )?команды\s*[:—-]?\s*русский|наша команда (?:общается|работает) на русском/iu.test(c) && !team.some(x=>x.language==='ru')) team.push({language:'ru',evidence:c.slice(0,240)});
-  }
-  return {team,requirements};
+  const a=rulesAnalysis(languageInput('',description));
+  return {team:a.team_languages.filter(x=>x.basis==='explicit').map(x=>({language:x.language,evidence:x.evidence.quote})),requirements:a.required_languages.filter(x=>x.mandatory).map(x=>({language:x.language,evidence:x.evidence.quote}))};
 }
-function matchVacancy({title, location='', role, geography, description}, profile) {
+function matchVacancy({title, location='', role, geography, description, languageAnalysis}, profile) {
   validateProfile(profile);
-  const family = roleFamily(title,role), level = seniority(title), languages = languageSignals(description);
+  const family = roleFamily(title,role), level = seniority(title), analysis=languageAnalysis||rulesAnalysis(languageInput(title,description)), fit=languageFit(analysis,profile), languages={team:analysis.team_languages.filter(x=>x.basis==='explicit').map(x=>({language:x.language,evidence:x.evidence.quote})),requirements:analysis.required_languages.filter(x=>x.mandatory).map(x=>({language:x.language,evidence:x.evidence.quote}))};
   const reasons = [], gaps = [], unknowns = [], exclusions = [];
   const item = (code, text, source='', evidence='') => ({code,text,source,evidence:String(evidence).slice(0,240)});
   const m = profile.matching;
-  if (!m) return {policy:'unconfigured',decision:'review',family,seniority:level,languages,reasons,gaps,exclusions,unknowns:[item('profile_missing','Персональный профиль не настроен')]};
+  if (!m) return {policy:'unconfigured',decision:'review',language_fit:fit,dimensions:{professional:{status:'unknown'},language_requirements:fit.requirements,team_language:fit.team_preference,geography:geography.status,overall:'review'},family,seniority:level,languages,reasons,gaps,exclusions,unknowns:[item('profile_missing','Персональный профиль не настроен')]};
   if (!role.matched || ![...m.primaryRoles,...m.secondaryRoles].includes(family)) exclusions.push(item('role_outside_profile','Роль вне выбранных направлений','title',title));
   else if (m.primaryRoles.includes(family)) reasons.push(item('primary_role','Приоритетное направление','title',title));
   else gaps.push(item('secondary_role','Дополнительное направление; проверить задачи роли','title',title));
@@ -49,13 +37,17 @@ function matchVacancy({title, location='', role, geography, description}, profil
   if (level.value === 'unknown') unknowns.push(item('seniority_unknown','Уровень явно не указан в названии'));
   else if (!m.preferredSeniority.length || m.preferredSeniority.includes(level.value)) reasons.push(item('seniority_preferred','Уровень в названии соответствует предпочтению','title',level.evidence));
   else gaps.push(item('seniority_gap','Уровень в названии вне предпочтений; это не жёсткий отказ','title',level.evidence));
-  if (!languages.team.length) unknowns.push(item('team_language_unknown','Язык команды не установлен по явной формулировке'));
-  else if (languages.team.some(x=>m.preferredTeamLanguages.includes(x.language))) reasons.push(item('team_language_preferred','Есть явное указание предпочитаемого языка команды','description',languages.team.find(x=>m.preferredTeamLanguages.includes(x.language)).evidence));
-  else if (m.preferredTeamLanguages.length) gaps.push(item('team_language_gap','Указан другой язык команды; проверить комфорт работы','description',languages.team[0].evidence));
-  for (const requirement of languages.requirements) unknowns.push(item('language_requirement_'+requirement.language,'Проверить соответствие явному языковому требованию','description',requirement.evidence));
+  if(fit.team_preference==='unknown')unknowns.push(item('team_language_unknown','Язык команды неизвестен'));
+  else if(['preferred','inferred_preferred'].includes(fit.team_preference))reasons.push(item('team_language_preferred',fit.team_preference==='preferred'?'Предпочтительный язык команды — подтверждено текстом вакансии':'Вероятно предпочитаемый язык команды; уточнить','description',analysis.team_languages.map(x=>x.evidence.quote).join('; ')));
+  else if(fit.team_preference==='other')gaps.push(item('team_language_gap','Указан другой язык команды; проверить комфорт работы','description',analysis.team_languages[0]?.evidence.quote));
+  for(const req of fit.requirement_details) {
+    const detail=item('language_requirement_'+req.language,'Требуется '+req.language+(req.required_level?' '+req.required_level:'')+' — '+({mismatch:'уровень ниже требования',meets:'соответствует профилю',unknown:'требуется уточнение'}[req.status]),req.evidence.field,req.evidence.quote);
+    (req.status==='mismatch'?exclusions:req.status==='meets'?reasons:unknowns).push(detail);
+  }
+  if(['failed','pending'].includes(analysis.language_analysis_status))unknowns.push(item('language_analysis_incomplete','Языковой анализ требует уточнения; вакансия сохранена'));
   unknowns.push(item('authorization_unknown','Право на работу и форма договора не проверены'));
   unknowns.push(item('experience_unknown','Опыт, навыки, домен, зарплата и занятость ещё не сопоставлены'));
-  const decision = exclusions.length ? 'excluded' : gaps.length || geography.workMode!=='remote' || level.value==='unknown' ? 'review' : 'priority';
-  return {policy:m.policy,decision,family,seniority:level,languages,reasons,gaps,unknowns,exclusions};
+  const decision = exclusions.length ? 'excluded' : gaps.length || fit.needs_review || geography.workMode!=='remote' || level.value==='unknown' ? 'review' : 'priority';
+  return {policy:m.policy,decision,language_fit:fit,dimensions:{professional:{family,seniority:level.value,status:'partial'},language_requirements:fit.requirements,team_language:fit.team_preference,geography:geography.status,overall:decision},family,seniority:level,languages,reasons,gaps,unknowns,exclusions};
 }
 module.exports = {matchVacancy,roleFamily,seniority,languageSignals,decisionLabels};

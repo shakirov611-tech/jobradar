@@ -10,15 +10,17 @@ function settings(env) {
  return {sources:validateSources(config),profile};
 }
 // Self-contained: embed the same validation in the n8n Code node.
-function validateEnvelope(p,expectedRunId) {
+function validateEnvelope(p,expectedRunId,languageColumns=false) {
  if(!p||p.runId!==expectedRunId||!Array.isArray(p.rows)||!Array.isArray(p.sources)||!Number.isSafeInteger(p.total)||p.total<0)throw new Error('JR_INVALID_COLLECTION_ENVELOPE');
  const allowed=new Set(['vacancy_id','company','title','source','original_url','canonical_url','location','workplace_type','language','published_at','updated_at','active_status','description','last_seen_at']);
+ if(languageColumns){allowed.add('language_analysis');allowed.add('language_fit');}
  const sourceIds=new Set();
  for(const s of p.sources){if(!s||typeof s.sourceId!=='string'||sourceIds.has(s.sourceId)||!['passed','failed'].includes(s.status)||!['total','matched'].every(k=>Number.isSafeInteger(s[k])&&s[k]>=0)||s.total<s.matched)throw new Error('JR_INVALID_SOURCE_SUMMARY');sourceIds.add(s.sourceId);}
  const ids=new Set();
  for(const row of p.rows) {
   if(!row||typeof row.vacancy_id!=='string'||ids.has(row.vacancy_id)||typeof row.last_seen_at!=='string'||!Number.isFinite(Date.parse(row.last_seen_at)))throw new Error('JR_INVALID_COLLECTION_ROW');
   if(Object.keys(row).some(k=>!allowed.has(k)))throw new Error('JR_UNOWNED_ROW_FIELD');
+  if(languageColumns)for(const key of ['language_analysis','language_fit']){if(typeof row[key]!=='string'||row[key].length>30000)throw new Error('JR_LANGUAGE_COLUMN');let value;try{value=JSON.parse(row[key]);}catch{throw new Error('JR_LANGUAGE_COLUMN');}if(!value||Array.isArray(value)||typeof value!=='object')throw new Error('JR_LANGUAGE_COLUMN');}
   ids.add(row.vacancy_id);
   if(!p.sources.some(s=>s.status==='passed'&&row.vacancy_id.slice(0,row.vacancy_id.lastIndexOf('_'))===s.sourceId))throw new Error('JR_SOURCE_ROW_MISMATCH');
  }
@@ -31,9 +33,10 @@ function buildMultiWorkflow(env,runId,{test=false}={}) {
  w.name='JobRadar multi-source '+(test?'TEST ':'')+runId;
  const http=w.nodes.find(n=>n.name==='HTTP Request');
  Object.assign(http,{type:'n8n-nodes-base.code',typeVersion:2,parameters:{jsCode:'return $input.all();'},retryOnFail:false});
- w.nodes.find(n=>n.name==='Code in JavaScript').parameters.jsCode=`const p=$input.first().json.body;\nreturn [{json:(${validateEnvelope.toString()})(p,${JSON.stringify(runId)})}];`;
+ w.nodes.find(n=>n.name==='Code in JavaScript').parameters.jsCode=`const p=$input.first().json.body;\nreturn [{json:(${validateEnvelope.toString()})(p,${JSON.stringify(runId)},${env.JR_LANGUAGE_SHEETS==='1'})}];`;
  const summary=w.nodes.find(n=>n.name==='Collection result');
  summary.parameters.jsCode=`const feed=$('Code in JavaScript').first().json;\nconst rows=feed.empty?[]:$('Prepare vacancy upsert').all().map(x=>x.json);\nconst sources=feed.sources.map(s=>{const own=rows.filter(r=>r.vacancy_id.slice(0,r.vacancy_id.lastIndexOf('_'))===s.sourceId);const inserted=own.filter(r=>Object.hasOwn(r,'first_seen_at')).length;return {...s,inserted,updated:own.length-inserted};});\nconst inserted=sources.reduce((n,s)=>n+s.inserted,0);\nreturn [{json:{ok:true,runId:${JSON.stringify(runId)},total:feed.total,matched:rows.length,inserted,updated:rows.length-inserted,sources}}];`;
+ if(env.JR_LANGUAGE_SHEETS==='1')require('../src/language/sheets.cjs').configureLanguageSheets(w);
  return w;
 }
 function fixtures(runId) {
@@ -45,13 +48,15 @@ async function runMulti(env,options={}) {
  const {run}=require('./run-collector.cjs');
  const test=!!options.test;
  const configured=settings(env);let collection;
+ const language=options.language||require('./language-runtime.cjs').languageRuntime(env,{dir:options.dir||require('./run-collector.cjs').STATE,test});
  const prepareCollection=async(runId,report)=>{
   const fixture=test?fixtures(runId):null;
   const sources=fixture?validateSources({version:1,sources:fixture.sources}):configured.sources;
-  collection=await collectSources(sources,configured.profile,{fetchImpl:options.sourceFetchImpl,loadFeed:fixture?.loadFeed,sleep:options.sleep});
+  collection=await collectSources(sources,configured.profile,{fetchImpl:options.sourceFetchImpl,loadFeed:fixture?.loadFeed,sleep:options.sleep,language});
+  report.language_processing=collection.language_processing;report.language_source_priorities=collection.language_source_priorities;
   report.sourceResults=collection.sources;report.policy={workMode:'remote-evidence-v1',role:configured.profile.rolePolicy,geographyCountry:configured.profile.country,geographyExcludesFromCRM:false,matching:configured.profile.matching?.policy||'unconfigured',profileFingerprint:collection.profileFingerprint};
   const dir=options.dir||require('./run-collector.cjs').STATE;
-  const catalogFile=runId+'.catalog.json';fs.writeFileSync(path.join(dir,catalogFile),JSON.stringify({observedAt:collection.observedAt,profile:collection.profile,profileFingerprint:collection.profileFingerprint,sources:collection.sources,catalog:collection.catalog},null,2)+'\n');report.catalogFile=catalogFile;
+  const catalogFile=runId+'.catalog.json';fs.writeFileSync(path.join(dir,catalogFile),JSON.stringify({observedAt:collection.observedAt,profile:collection.profile,profileFingerprint:collection.profileFingerprint,language_source_priorities:collection.language_source_priorities,language_processing:collection.language_processing,sources:collection.sources,catalog:collection.catalog},null,2)+'\n');report.catalogFile=catalogFile;
   const html=require('../src/reports/catalog-preview.cjs').renderCatalog(collection);fs.writeFileSync(path.join(dir,runId+'.catalog.html'),html);fs.writeFileSync(path.join(dir,'preview.html'),html);report.previewFile='preview.html';
   if(!collection.sources.some(s=>s.status==='passed'))throw new Error('JR_ALL_SOURCES_FAILED');
   if(Buffer.byteLength(JSON.stringify(collection.rows),'utf8')>8*1024*1024)throw new Error('JR_COLLECTION_PAYLOAD_LIMIT');

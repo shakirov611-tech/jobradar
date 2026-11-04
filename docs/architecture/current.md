@@ -1,14 +1,16 @@
 # Текущая архитектура
 
-Срез реализации проверен 2026-11-03 по commit `be5dafe`. Статус выпуска/установки ведётся в [roadmap](../product/roadmap.md), пути и тесты — в [карте кода](codebase-map.md). Это описание существующего single-user решения; [evolution](evolution.md) описывает целевую архитектуру.
+Основа проверена по commit `be5dafe`; Language Intelligence v1 добавлен в рабочей ветке 2026-11-04. Статус выпуска/установки ведётся в [roadmap](../product/roadmap.md), пути и тесты — в [карте кода](codebase-map.md). Это описание существующего single-user решения; [evolution](evolution.md) описывает целевую архитектуру.
 
 ## Компоненты и поток данных
 
 ```mermaid
 flowchart TD
-  ATS["Greenhouse / Lever"] --> Sources["Node: sources и matching"]
+  ATS["Greenhouse / Lever"] --> Sources["Node: общий сбор"]
   Config["Sources и search profile"] --> Sources
-  Sources --> Preview["Локальные catalog / review HTML и JSON"]
+  Sources --> Language["Language analysis и кэш"]
+  Language --> Match["Персональный matching"]
+  Match --> Preview["Локальные catalog / review HTML и JSON"]
   Sources --> Runner["Collector: lock, run ID, отчёт"]
   Runner --> Webhook["Локальный n8n: временный webhook"]
   Webhook --> Upsert["Read existing → prepare upsert"]
@@ -18,9 +20,9 @@ flowchart TD
 ```
 
 - **Sources** читает публичные API, проверяет полноту/формат и формирует scoped ID. Ошибка одного источника не превращается в пустой успешный feed. Конфигурация находится в `config/sources.json`.
-- **Matching** отделяет роль, remote, страну найма, seniority и язык. Правила дают объяснения и категории; это эвристики, не LLM и не вероятность трудоустройства.
+- **Language enrichment** выделяет язык публикации, обязательные/желательные требования и язык команды с evidence. Общий анализ не зависит от пользователя: rules по умолчанию, optional AI provider, кэш и ограниченные retries. **Matching** рассчитывает Language Fit отдельно по search profile, наряду с ролью, seniority и географией. Объяснения и rank boost не являются вероятностью трудоустройства. [Контракт/эксплуатация](../operations/language-intelligence.md), [ADR 015](../adr/015-language-intelligence.md).
 - **Collector** на Node собирает источники, проверяет payload, создаёт временный workflow, активирует, вызывает webhook и проверяет completion. Затем деактивирует и удаляет workflow. На неоднозначном исходе сохраняет lock для проверки человеком.
-- **Storage preparation** читает существующие ID; при вставке задаёт first_seen_at, при update не передаёт его. Google Sheets node выполняет appendOrUpdate по vacancy_id. Детали и ограничения — [контракты](../contracts.md).
+- **Storage preparation** читает существующие ID; при вставке задаёт first_seen_at, при update не передаёт его. Google Sheets node выполняет appendOrUpdate по vacancy_id. При opt-in языковых колонок добавляется чтение записанных JSON и сверка значений; автоматическое создание колонок запрещено. Детали и ограничения — [контракты](../contracts.md).
 - **Reports** создаёт автономный HTML и JSON в `.collector-state/`. Remote-фильтр основного обзора не отбрасывает ролевые строки из CRM. Review связывает пользовательские оценки с конкретным snapshot.
 - **Resumes** читает приватный профиль фактов и выбранную вакансию; формирует версионированный пакет, выбор фактов, preview и HTML export. Черновик сохраняется локально и переносится JSON с проверкой hash. Отбор/порядок фактов — без генерации новых утверждений; approval экспорта не является разрешением отправить отклик.
 - **Applications** — изолированный прототип HTTP/browser на fixtures и read-only inspection. Он не подключён к production-отправке работодателям.
@@ -55,3 +57,4 @@ Lock защищает только запуски данного runner из о�
 HTML/localStorage и локальные JSON не заменяют durable product storage. Нет PostgreSQL, auth/tenant isolation, AI-перефразирования, автоматического PDF renderer или подтверждённого live Submit. Эти компоненты нельзя считать реализованными из-за наличия target schema или spike.
 
 Изменение инфраструктуры, реальная отправка и второй пользователь требуют отдельных решений и проверок по roadmap. Исторические аудиты и release notes сохраняются как датированные доказательства; их ограничения не переопределяют текущий код.
+

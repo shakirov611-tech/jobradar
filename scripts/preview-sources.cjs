@@ -5,7 +5,7 @@ const {renderReview}=require('../src/reports/matching-review.cjs');
 const {attachResumes}=require('./resume-catalog.cjs');
 const {read}=require('./prepare-resume.cjs');
 async function main() {
- const {sources,profile}=settings(process.env);const result=await collectSources(sources,profile);
+ const {sources,profile}=settings(process.env);const language=require('./language-runtime.cjs').languageRuntime(process.env);const result=await collectSources(sources,profile,{language});
  const dir=path.resolve(__dirname,'../.collector-state');fs.mkdirSync(dir,{recursive:true});
  const review=buildReview(result);const reviewName='review-'+review.snapshotId;
  fs.writeFileSync(path.join(dir,reviewName+'.json'),JSON.stringify(review,null,2)+'\n');

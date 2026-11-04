@@ -1,4 +1,6 @@
 const {createHash}=require('node:crypto');
+const {languageInput,rulesAnalysis,createAnalyzer}=require('../language/analyzer.cjs');
+const {sourcePriorities}=require('../language/personalize.cjs');
 const {validateProfile,profileFingerprint}=require('../matching/profile.cjs');
 const {matchVacancy}=require('../matching/personal-match.cjs');
 const {descriptionText}=require('../matching/role-and-geography.cjs');
@@ -59,25 +61,41 @@ function normalizeFeed(s,feed,observedAt,profile) {
   const desc=gh?job.content:[job.description||'',...(Array.isArray(job.lists)?job.lists.map(x=>(x.text||'')+'\n'+(x.content||'')):[]),job.additional||''].join('\n');
   const role=classifyRole(title),geography=classifyGeography(location,work,profile,desc);
   const originalUrl=gh?job.absolute_url:job.hostedUrl;
-  const matching=matchVacancy({title,location,role,geography,description:desc},profile);
+  const input=languageInput(title,desc,typeof job.language==='string'?job.language:''),analysis=rulesAnalysis(input,{now:observedAt});
+  const matching=matchVacancy({title,location,role,geography,description:desc,languageAnalysis:analysis},profile);
   const text=descriptionText(desc);
-  catalog.push({matching,reviewText:text.slice(0,12000),reviewTextTruncated:text.length>12000,descriptionHash:createHash('sha256').update(text).digest('hex'),vacancy_id:key,sourceId:sourceId(s),company:s.company,title,location,workplaceType:work,original_url:typeof originalUrl==='string'?originalUrl:'',role,geography});
+  catalog.push({language_analysis:analysis,matching,reviewText:text.slice(0,12000),reviewTextTruncated:text.length>12000,descriptionHash:createHash('sha256').update(text).digest('hex'),vacancy_id:key,sourceId:sourceId(s),company:s.company,title,location,workplaceType:work,original_url:typeof originalUrl==='string'?originalUrl:'',role,geography});
+  Object.defineProperty(catalog[catalog.length-1],'language_input',{value:input});
   if(!role.matched)continue;
   const date=Number.isSafeInteger(job.createdAt)&&job.createdAt>0&&job.createdAt<=8640000000000000?new Date(job.createdAt).toISOString():'';
   rows.push({vacancy_id:key,company:s.company,title,source:gh?'Greenhouse':'Lever',original_url:typeof originalUrl==='string'?originalUrl:'',canonical_url:typeof originalUrl==='string'?originalUrl:'',location,workplace_type:work,language:typeof job.language==='string'?job.language:'Unknown',published_at:gh?(typeof job.first_published==='string'?job.first_published:''):date,updated_at:gh?(typeof job.updated_at==='string'?job.updated_at:''):'',active_status:'active_in_feed',description:typeof desc==='string'?desc.slice(0,30000):'',last_seen_at:observedAt});
  }
  return {rows,catalog,total:jobs.length};
 }
-async function collectSources(sources,profile,{fetchImpl=fetch,sleep,observedAt=new Date().toISOString(),loadFeed}={}) {
+async function collectSources(sources,profile,{fetchImpl=fetch,sleep,observedAt=new Date().toISOString(),loadFeed,language={engine:createAnalyzer()}}={}) {
  validateProfile(profile);
  const results=[];
  // Two read-only requests concurrently, bounded source/page counts.
  for(let start=0;start<sources.length;start+=2) {
   const batch=await Promise.all(sources.slice(start,start+2).map(async s=>{
-   try{const feed=loadFeed?await loadFeed(s):await fetchFeed(s,{fetchImpl,sleep});const n=normalizeFeed(s,feed,observedAt,profile);return {sourceId:sourceId(s),provider:s.provider,company:s.company,status:'passed',total:n.total,matched:n.rows.length,views:Object.fromEntries(['main','unclear','excluded'].map(k=>[k,n.catalog.filter(x=>x.role.matched&&x.geography.visibility===k).length])),roleReview:n.catalog.filter(x=>x.role.matched&&x.role.reason.endsWith('needs_review')).length,geography:Object.fromEntries(['plausible','review','restricted'].map(k=>[k,n.catalog.filter(x=>x.role.matched&&x.geography.status===k).length])),rows:n.rows,catalog:n.catalog};}
+   try{const feed=loadFeed?await loadFeed(s):await fetchFeed(s,{fetchImpl,sleep});const n=normalizeFeed(s,feed,observedAt,profile);
+   for(const row of n.catalog) {
+    row.language_analysis=await language.engine.analyze(row.language_input);
+    const review=language.overrideFor?.(row.vacancy_id,row.language_input,row.language_analysis);
+    if(review)row.language_review=review;
+    row.matching=matchVacancy({...row,description:row.language_input.description,languageAnalysis:review?.analysis||row.language_analysis},profile);
+   }
+   if(language.sheets)for(const row of n.rows) {
+    const enriched=n.catalog.find(x=>x.vacancy_id===row.vacancy_id);
+    row.language_analysis=JSON.stringify(enriched.language_analysis);
+    row.language_fit=JSON.stringify({profile_fingerprint:profileFingerprint(profile),...enriched.matching.language_fit,manual_review:enriched.language_review?.status||null});
+   }
+   return {sourceId:sourceId(s),provider:s.provider,company:s.company,status:'passed',total:n.total,matched:n.rows.length,views:Object.fromEntries(['main','unclear','excluded'].map(k=>[k,n.catalog.filter(x=>x.role.matched&&x.geography.visibility===k).length])),roleReview:n.catalog.filter(x=>x.role.matched&&x.role.reason.endsWith('needs_review')).length,geography:Object.fromEntries(['plausible','review','restricted'].map(k=>[k,n.catalog.filter(x=>x.role.matched&&x.geography.status===k).length])),rows:n.rows,catalog:n.catalog};}
    catch(e){return {sourceId:sourceId(s),provider:s.provider,company:s.company,status:'failed',error:/^JR_[A-Z0-9_]+$/.test(e.message)?e.message:'JR_SOURCE_FAILED',total:0,matched:0,rows:[],catalog:[]};}
   }));results.push(...batch);
  }
- return {observedAt,profile,profileFingerprint:profileFingerprint(profile),sources:results.map(({rows,catalog,...rest})=>rest),total:results.reduce((n,r)=>n+r.total,0),rows:results.flatMap(r=>r.rows),catalog:results.flatMap(r=>r.catalog)};
+ const collection={observedAt,profile,profileFingerprint:profileFingerprint(profile),sources:results.map(({rows,catalog,...rest})=>rest),total:results.reduce((n,r)=>n+r.total,0),rows:results.flatMap(r=>r.rows),catalog:results.flatMap(r=>r.catalog)};
+ collection.language_source_priorities=sourcePriorities(collection);collection.language_processing={...language.engine.stats};
+ return collection;
 }
 module.exports={sourceId,validateSources,feedUrl,fetchFeed,normalizeFeed,collectSources};
