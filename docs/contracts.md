@@ -33,3 +33,8 @@ ID scoped по provider/board/region и external ID; существующий к
 Submitted в application spike требует подтверждения соответствующего пакета/вакансии. Неоднозначный результат — submission_unknown без автоматического повтора. Это fixture-контракт, не доказательство live-отправки или durable storage.
 
 При расширении контракта добавляйте проверку потребителей и совместимости. Target-инварианты многопользовательской БД не выдавайте за гарантии текущей Sheets.
+
+
+## Language Intelligence v1
+
+Общий `language_analysis` отделён от `matching.language_fit`; профиль не влияет на набор полученных вакансий или shared cache. Ошибка AI сохраняет запись и явный failed/pending статус. Старое поле `language` не переопределяется. При `JR_LANGUAGE_SHEETS=1` whitelist допускает два JSON-поля `language_analysis` и `language_fit`; второе включает fingerprint владельца локальной проекции. Только эти новые машинные поля обновляются, auto-map и vacancy_id сохраняются. Read-back сверяет фактически записанные значения. Точная [схема, инвалидация и rollout](operations/language-intelligence.md), [ADR 015](adr/015-language-intelligence.md).

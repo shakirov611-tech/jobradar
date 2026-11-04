@@ -1,6 +1,6 @@
 # Карта кода
 
-Проверена по `be5dafe` (2026-11-03). Имена ниже — поисковые якоря, не копия реализации. Начните со строки задачи, затем прочитайте её тесты и непосредственные зависимости. Все пути относительно корня репозитория.
+Основа проверена по `be5dafe`; Language v1 добавлен 2026-11-04. Имена ниже — поисковые якоря, не копия реализации. Начните со строки задачи, затем прочитайте её тесты и непосредственные зависимости. Все пути относительно корня репозитория.
 
 ## Основные модули
 
@@ -8,6 +8,8 @@
 |---|---|---|---|
 | Добавить источник, исправить API/ID/pagination | `src/sources/catalog.cjs`: validateSources, sourceId, feedUrl, fetchFeed, normalizeFeed, collectSources; `config/sources.json` | matching/profile, role-and-geography, personal-match; Node fetch/crypto | `tests/multi-source.test.cjs`, `tests/personal-match.test.cjs` |
 | Исправить remote/страну/роль | `src/matching/role-and-geography.cjs`: classifyRole, classifyWorkMode, classifyGeography, descriptionText | Профиль поиска; используется sources и personal-match | `tests/remote-policy.test.cjs`, `tests/multi-source.test.cjs`, `tests/personal-match.test.cjs` |
+| Языковое enrichment / cache / AI | `src/language/contract.cjs`: SCHEMA, validateAnalysis; `rules.cjs`: analyzeRules; `analyzer.cjs`: languageInput, createAnalyzer, createOpenAIProvider, createMockProvider; `prompt.cjs`: PROMPT_VERSION; `config/language-analysis.json` | Только vacancy input; Node fs/crypto/fetch; без candidate profile | `tests/language-intelligence.test.cjs` |
+| Language Fit / source priorities / ручная поправка | `src/language/personalize.cjs`: languageFit, sourcePriorities; `scripts/language-runtime.cjs`: languageRuntime; `presentation.cjs`: languageSummary; `sheets.cjs`: configureLanguageSheets, verifyLanguageRows | Search profile; shared analysis; приватный override; collector/preview и auto-map n8n | `tests/language-intelligence.test.cjs`, `browser/tests/language-review.test.cjs` |
 | Изменить профиль и объяснения подбора | `src/matching/profile.cjs`: validateProfile, profileFingerprint; `personal-match.cjs`: matchVacancy, languageSignals; `config/search-profile.json` | role-and-geography; вызывается sources | `tests/personal-match.test.cjs`, `tests/config-check.test.cjs` |
 | Изменить выборку и импорт оценок | `src/matching/review.cjs`: buildReview, validateLabels, validateAnswers, summarizeReview; `scripts/matching-report.cjs`: createReport | Snapshot/profile hash; reports/matching-review | `tests/personal-match.test.cjs`, `browser/tests/matching-review.test.cjs` |
 | Исправить каталог/HTML review | `src/reports/catalog-preview.cjs`: renderCatalog; `matching-review.cjs`: renderReview; `scripts/preview-sources.cjs` CLI | sources → matching/review; опционально resume-catalog | `tests/multi-source.test.cjs`, `tests/personal-match.test.cjs`, `browser/tests/catalog-preview.test.cjs`, `browser/tests/matching-review.test.cjs` |
@@ -30,6 +32,7 @@
 | Источники и внешние API | [Справочник адаптеров](../research/source-coverage-v0.6.md#справочник-существующих-адаптеров), ADR [010](../adr/010-multi-source-catalog.md) |
 | Writer / данные | [Контракты](../contracts.md), [модель](../data-model.md), [integration setup](../operations/integration-tests.md), ADR [004](../adr/004-identity.md), [007](../adr/007-local-scheduled-writer.md) |
 | Matching / UI review | [Инструкция](../operations/matching-v0.7.md), ADR [011](../adr/011-confirmed-remote-main-view.md), [012](../adr/012-explainable-matching-review.md), [013](../adr/013-role-conditions-and-review-dimensions.md) |
+| Language Intelligence | [Контракт и операции](../operations/language-intelligence.md), ADR [015](../adr/015-language-intelligence.md) |
 | Резюме | [Инструкция](../operations/resume-preparation.md), ADR [014](../adr/014-local-facts-resume-review.md) |
 | Отклики | [HTTP spike](../research/application-channel-spike.md), [browser evidence](../research/browser-dry-run.md), ADR [008](../adr/008-application-channel-spike.md), [009](../adr/009-browser-dry-run-boundary.md) |
 | Docker / установка / релиз | [Local runbook](../operations/local-runbook.md), [releases](../operations/releases.md) |
@@ -44,3 +47,4 @@
 `.env.integration`, `.collector-state/`, `config/private/`, `exports-private/` — локальные приватные данные, игнорируемые Git. Не просматривайте/публикуйте их содержимое ради общего знакомства с проектом. Для ошибки запрашивайте минимальный обезличенный результат.
 
 Карту обновляют в том же PR, где меняются пути, интерфейсы или расположение тестов. Полное дерево доступно через `rg --files`; не поддерживайте его вторую копию здесь.
+

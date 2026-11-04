@@ -4,7 +4,8 @@ const {validateProfile,profileFingerprint}=require('../src/matching/profile.cjs'
 const {languageSignals}=require('../src/matching/personal-match.cjs');
 const {buildReview,summarizeReview}=require('../src/matching/review.cjs');
 const {renderReview}=require('../src/reports/matching-review.cjs');
-const profile=require('../config/search-profile.json');const source={provider:'greenhouse',board:'fixture',company:'Fixture',enabled:true};
+// Keep these pre-v2 regression cases on the legacy profile; v2 is covered in language tests.
+const profile=structuredClone(require('../config/search-profile.json'));delete profile.language_preferences;profile.matching.policy='personal-match-v1';const source={provider:'greenhouse',board:'fixture',company:'Fixture',enabled:true};
 const at='2026-10-29T12:00:00.000Z';
 function normalize(title='Senior Product Manager',location='Remote - Europe',content=''){return normalizeFeed(source,{jobs:[{id:1,title,location:{name:location},content}]},at,profile);}
 test('priority is explained without claiming country eligibility or full fit',()=>{const m=normalize().catalog[0].matching;assert.equal(m.decision,'priority');assert.ok(m.reasons.some(x=>x.code==='primary_role'&&x.evidence==='Senior Product Manager'));assert.ok(m.unknowns.some(x=>x.code==='hiring_unknown'));assert.ok(m.unknowns.some(x=>x.code==='authorization_unknown'));assert.ok(!Object.hasOwn(m,'score'));});

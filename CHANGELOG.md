@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+LANG-01: общий language analysis с evidence, отдельный персональный Language Fit, конфигурируемые языки/уровни, кэш и optional structured-output AI provider. Интеграция collector/preview, ручные hash-bound поправки, языковые пояснения в HTML и отчёт по всем источникам. Две opt-in JSON-колонки CRM с read-back; legacy workflows сохранены. [Rollout и непроверенные границы](docs/operations/language-intelligence.md).
+
 DOC-01: локальный профиль фактов, подготовка резюме под выбранную вакансию, review состава и источников, подтверждение перед HTML export. Без LLM и отправки. [Ограничения](docs/operations/resume-preparation.md).
 
 ## 0.7.1 — 2026-10-30

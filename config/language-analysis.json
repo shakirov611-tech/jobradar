@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "provider": "rules",
+  "model": "",
+  "timeout_ms": 15000,
+  "max_attempts": 2,
+  "max_ai_calls_per_run": 20,
+  "max_input_chars": 20000,
+  "failure_cooldown_ms": 300000,
+  "aliases": {
+    "ru": ["Russian", "русский", "русском", "русского", "русским"],
+    "en": ["English", "английский", "английском", "английского", "английским"],
+    "bg": ["Bulgarian", "болгарский", "болгарском", "български"],
+    "de": ["German", "Deutsch", "немецкий", "немецком"],
+    "fr": ["French", "français", "французский"],
+    "es": ["Spanish", "español", "испанский"],
+    "pt": ["Portuguese", "português"],
+    "ja": ["Japanese", "日本語"]
+  },
+  "posting_markers": {
+    "en": ["the", "and", "you", "your", "with", "our", "we", "will"],
+    "ru": ["мы", "наша", "для", "опыт", "работы", "обязанности", "требования", "команда"],
+    "de": ["wir", "und", "für", "mit", "deine", "unser"],
+    "fr": ["nous", "vous", "notre", "avec", "pour", "des"],
+    "es": ["nuestro", "para", "con", "experiencia", "equipo", "trabajo"]
+  }
+}
