@@ -1,93 +1,57 @@
-# Текущая архитектура (as-is)
+# Текущая архитектура
 
-> Обновление 29.10.2026: получены экспорт и точный JS. Актуальные подтверждения, ограничения и результаты 12 тестов — [аудит экспорта](../audit-workflow-export.md). Противоречащие ему утверждения ниже об отсутствии workflow/кода относятся к первоначальному срезу. Baseline gate ещё не закрыт.
+Срез реализации проверен 2026-11-03 по commit `be5dafe`. Статус выпуска/установки ведётся в [roadmap](../product/roadmap.md), пути и тесты — в [карте кода](codebase-map.md). Это описание существующего single-user решения; [evolution](evolution.md) описывает целевую архитектуру.
 
-
-Статус: компоненты подтверждены пользователем; параметры — по E1; точные связи узлов n8n требуют экспорта.
+## Компоненты и поток данных
 
 ```mermaid
 flowchart TD
-  subgraph Local["Windows / WSL2 / Docker"]
-    N["n8n: оркестрация"]
-    J["JavaScript: нормализация"]
-    V["Named volume: состояние n8n"]
-    N --> J
-    N --- V
-  end
-  G["Greenhouse API"] --> N
-  J --> S["Google Sheets CRM"]
-  U["Пользователь"] --> S
+  ATS["Greenhouse / Lever"] --> Sources["Node: sources и matching"]
+  Config["Sources и search profile"] --> Sources
+  Sources --> Preview["Локальные catalog / review HTML и JSON"]
+  Sources --> Runner["Collector: lock, run ID, отчёт"]
+  Runner --> Webhook["Локальный n8n: временный webhook"]
+  Webhook --> Upsert["Read existing → prepare upsert"]
+  Upsert --> Sheets["Google Sheets CRM"]
+  Preview --> Resume["Пакет резюме и HTML review"]
+  Facts["Приватные факты кандидата"] --> Resume
 ```
 
-Логический flow: запуск → получение вакансий Greenhouse → нормализация → сопоставление vacancy_id → вставка новых / обновление существующих → last_seen_at. Реализация может использовать один upsert node или отдельные ветви: это неизвестно. Trigger и порядок промежуточных узлов не восстановлены по догадке.
+- **Sources** читает публичные API, проверяет полноту/формат и формирует scoped ID. Ошибка одного источника не превращается в пустой успешный feed. Конфигурация находится в `config/sources.json`.
+- **Matching** отделяет роль, remote, страну найма, seniority и язык. Правила дают объяснения и категории; это эвристики, не LLM и не вероятность трудоустройства.
+- **Collector** на Node собирает источники, проверяет payload, создаёт временный workflow, активирует, вызывает webhook и проверяет completion. Затем деактивирует и удаляет workflow. На неоднозначном исходе сохраняет lock для проверки человеком.
+- **Storage preparation** читает существующие ID; при вставке задаёт first_seen_at, при update не передаёт его. Google Sheets node выполняет appendOrUpdate по vacancy_id. Детали и ограничения — [контракты](../contracts.md).
+- **Reports** создаёт автономный HTML и JSON в `.collector-state/`. Remote-фильтр основного обзора не отбрасывает ролевые строки из CRM. Review связывает пользовательские оценки с конкретным snapshot.
+- **Resumes** читает приватный профиль фактов и выбранную вакансию; формирует версионированный пакет, выбор фактов, preview и HTML export. Черновик сохраняется локально и переносится JSON с проверкой hash. Отбор/порядок фактов — без генерации новых утверждений; approval экспорта не является разрешением отправить отклик.
+- **Applications** — изолированный прототип HTTP/browser на fixtures и read-only inspection. Он не подключён к production-отправке работодателям.
 
-## Границы и ответственность
+## Границы кода и n8n
 
-| Компонент | Ответственность | Чего не подтверждает |
-|---|---|---|
-| Greenhouse | Данные источника | Пригодность роли кандидату, гарантированную свежесть |
-| n8n | Запуск и интеграции | SaaS tenant isolation |
-| JavaScript | Приведение формата | Полную валидацию и точность классификации |
-| Google Sheets | Хранилище вакансий и интерфейс CRM | Транзакционный upsert и ограничения unique |
-| Docker volume | Состояние n8n | Независимую резервную копию |
+`src/` содержит бизнес-правила и renderers, `scripts/` — CLI, I/O и сборку workflow. Постоянного API-сервера, фонового Node-сервиса и frontend build pipeline нет. `package.json` определяет команды; CommonJS использует встроенные Node API. ESLint — зависимость разработки, Playwright вынесен в `browser/`.
 
-Две разные плоскости хранения: внутренняя база n8n для workflows/credentials/executions и Sheets для продуктовых данных. Будущая продуктовая PostgreSQL не подразумевает использование внутренних таблиц n8n.
+В репозитории три вида workflow-артефактов:
 
-## Сеть
+| Артефакт | Назначение |
+|---|---|
+| `workflows/*.sanitized.json` | Исторический экспорт исходной цепочки Manual → HTTP → Code → Sheets; доказательство baseline |
+| `workflows/*.validation-v0.3.json`, `*.first-seen-v0.4.json` | Производные legacy-цепочки из JS; сборка через `workflow:build`. Вторая добавляет чтение таблицы и storage preparation |
+| Генераторы в `scripts/` | Runtime scheduled/multi-source и integration workflow. В multi-source данные уже собраны Node, n8n отвечает за локальную запись и summary |
 
-По E1 порт 5678 привязан к 127.0.0.1. localhost в облачной среде не является компьютером пользователя. Не открывать порт и не вводить туннель ради аудита. Материалы передаются экспортом файлов. Доступ к API и Google инициируется локальной системой; OAuth уже проходил локально по E5.
+Multi-source — обычный путь `collector:run`; legacy Airbnb сохраняется отдельной командой. Изменение общего storage-кода влияет и на производные workflow, и на runtime builders: проверять оба пути.
 
-## Эксплуатационные ограничения
+## Инфраструктура и интеграции
 
-Сбор зависит от работающего ПК, Docker, сети и сна Windows. restart: unless-stopped не решает сон устройства. Europe/Sofia — timezone конфигурации, timestamp для обмена хранить с offset/UTC. Наличие schedule в JSON не доказывает activation trigger. Рабочий источник настроек до JR-003 неизвестен.
+- Windows/WSL2, Docker и n8n на loopback; артефакт Compose — `infra/local/docker-compose.yml`. Там используется `n8n:stable`, а не зафиксированный digest. Нельзя считать версию установленного контейнера известной по этому тегу.
+- Windows Task Scheduler вызывает collector раз в три часа при входе пользователя. Docker/n8n должны работать; это не облачный scheduler.
+- Sheets — проекция каталога с ручными CRM-полями. n8n хранит свои credentials/state в volume; это не продуктовая БД.
+- Greenhouse/Lever — публичное чтение. Справочник endpoint/данных/retry: [source coverage](../research/source-coverage-v0.6.md#справочник-существующих-адаптеров).
+- n8n REST API управляет временным workflow; Google Sheets node использует credential владельца. Настройка и разделение тестовых ресурсов — [integration tests](../operations/integration-tests.md).
+- GitHub Actions проверяет Node и browser fixtures. Deployment локальной установки остаётся отдельным действием; [CI](../operations/ci.md).
 
-## Срез v0.5 — 2026-10-29
+## Ограничения
 
-v0.4 проверен пользователем на реальных n8n 2.45.5 и рабочей Google Sheets:
-повторные запуски без дублей, last_seen обновляется, first_seen сохраняется.
-first_seen создаётся только для новых ID, исторические пустые значения не заполняются.
+Lock защищает только запуски данного runner из одного рабочего каталога. Другой экземпляр/ручной workflow может обойти его; Sheets не даёт транзакционного upsert. Нет автоматического подтверждения закрытия исчезнувших вакансий, semantic dedup между объявлениями и защиты timestamp от уменьшения при старом событии.
 
-В v0.5 добавлен локальный Windows Task Scheduler → Node runner с эксклюзивным
-файловым lock → временный webhook workflow n8n → текущий Greenhouse/Sheets pipeline.
-Пустой результат получает явное подтверждение. Отчёт содержит runId, этапы, время,
-счётчики и исход; неизвестный результат удерживает lock. Облако не обращается к localhost.
-Docker остаётся прежним. Это реализовано, но новый runtime путь ещё требует локальной
-проверки; [инструкция](../operations/scheduled-collector-v0.5.md), [ADR 007](../adr/007-local-scheduled-writer.md).
+HTML/localStorage и локальные JSON не заменяют durable product storage. Нет PostgreSQL, auth/tenant isolation, AI-перефразирования, автоматического PDF renderer или подтверждённого live Submit. Эти компоненты нельзя считать реализованными из-за наличия target schema или spike.
 
-## Runtime evidence и APP-01 — 2026-10-29
-
-Пользователь подтвердил первый scheduled production run v0.5: 190/15/0/15
-(total/matched/inserted/updated), cleanup completed, lock null, Windows task result 0.
-Значит, test-first installer и Windows execution проверены; повторяемость следующего
-трёхчасового интервала отдельно не подтверждалась.
-
-APP-01 добавляет изолированное чтение требований формы и controlled HTTP fixture.
-Никакой application worker не включён в scheduled collector, реальная отправка
-к работодателю не реализована. [Evidence и ограничения](../research/application-channel-spike.md).
-
-## v0.6 — source expansion после пользовательского пересмотра приоритета
-
-Source registry → два Node read adapters (Greenhouse/Lever) → role/geography policy →
-объединённый payload → один temporary n8n writer → прежняя Google Sheets CRM.
-Read phase и write phase защищены прежним локальным lock. Failure одного board даёт
-явный partial; all failed не создаёт writer. First_seen/upsert и original Airbnb IDs
-сохранены. География/reasons — в локальном HTML/JSON каталоге, новых Sheets колонок нет.
-Legacy v0.5 runner сохранён; browser/application spike не включается в поиск/отклики.
-[ADR 010](../adr/010-multi-source-catalog.md), [операции](../operations/multi-source-v0.6.md).
-
-## v0.6.1 — remote evidence и основной view
-
-Description-aware work mode policy remote-evidence-v1 добавляет main/unclear/excluded
-и короткое evidence к локальному каталогу. Основной HTML view требует подтверждённого
-remote без выявленных country restrictions. Ролевой writer и историческая CRM сохранены;
-это не фильтрация last_seen/закрытие записей. [ADR 011](../adr/011-confirmed-remote-main-view.md).
-
-## v0.7.0 — MATCH-01, первая итерация
-
-После нормализации чистая функция сопоставляет профиль с названием, форматом и явными языковыми сигналами. Выход — объяснимый приоритет просмотра; бизнес-данные Sheets не меняются. Полный каталог получает profile fingerprint для воспроизводимости.
-
-Read-only preview дополнительно строит сбалансированный review snapshot и отдельный offline HTML. Оценки хранятся в браузере с JSON export/import; CLI сводит их только с исходным локальным снимком. Нет сервера, LLM, новой БД или передачи оценок третьим лицам. [ADR 012](../adr/012-explainable-matching-review.md).
-
-## v0.7.1 — исправления после первой разметки
-
-Чистые правила geography remote-bg-v2 уточняют приоритет условий конкретной позиции, optional hybrid и страны найма. Стек и writer сохраняются. Review HTML показывает текст сразу; общий валидатор v1/v2 используется в браузере и CLI. Частичные оценки сохраняются, старые JSON не переписываются. `matching:report -- FILE --open` пересоздаёт только HTML старого снимка с загруженными оценками; для пересчёта выдачи нужен новый preview. [ADR 013](../adr/013-role-conditions-and-review-dimensions.md).
+Изменение инфраструктуры, реальная отправка и второй пользователь требуют отдельных решений и проверок по roadmap. Исторические аудиты и release notes сохраняются как датированные доказательства; их ограничения не переопределяют текущий код.

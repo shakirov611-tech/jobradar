@@ -1,27 +1,26 @@
 # Модель данных
 
-> Обновление 29.10.2026: получены экспорт и точный JS. Актуальные подтверждения, ограничения и результаты 12 тестов — [аудит экспорта](audit-workflow-export.md). Противоречащие ему утверждения ниже об отсутствии workflow/кода относятся к первоначальному срезу. Baseline gate ещё не закрыт.
+Поля текущего кода сверены 2026-11-03 по `be5dafe`. Реализованные проверки и ограничения — в [contracts](contracts.md); нижеследующая целевая схема не является существующей БД.
 
+## As-is: каталог и Sheets projection
 
-## As-is: наблюдавшийся контракт
+Нормализация: [sources/catalog.cjs](../src/sources/catalog.cjs); storage preparation: [prepare-vacancy-upsert.cjs](../src/storage/prepare-vacancy-upsert.cjs). Типы ниже семантические: формат ячеек установленной Sheets проверяется отдельно.
 
-E4 содержит перечисленные поля; E5 добавляет last_seen_at. Заголовки и типы реальной Sheets ещё не сняты. Sheets — flat projection; следующие типы семантические, не утверждение о фактическом формате ячеек.
+| Поле | Текущее представление / смысл |
+|---|---|
+| vacancy_id | Строка provider/board/region + external ID; сохраняется legacy Airbnb key |
+| company, title | Строки из конфигурации/источника |
+| source | Display value Greenhouse или Lever |
+| original_url, canonical_url | Одинаковая строка исходного URL, иногда пустая; отдельной canonicalization нет |
+| location, workplace_type | Строки; workplace unknown обозначается Unknown |
+| language | Язык источника либо Unknown; не требование к языку команды |
+| published_at, updated_at | Строки из источника либо пустые; Greenhouse first_published/updated_at, Lever createdAt → ISO для published_at |
+| active_status | active_in_feed; исчезновение не означает подтверждённое закрытие |
+| description | Исходное содержимое/HTML, не более 30000 code units; отображение обрабатывается отдельно |
+| first_seen_at | Дата первой вставки; у исторической строки может оставаться пустой |
+| last_seen_at | Время наблюдения; валидируется как дата, без сравнения с предыдущей |
 
-| Поле | Семантический тип | Правило / источник |
-|---|---|---|
-| vacancy_id | string | Стабильный ключ; пример greenhouse_airbnb_8262207 |
-| company, title | string | Наблюдаются в E4 |
-| source | string | Сейчас display value Greenhouse |
-| original_url, canonical_url | URL string | В E4 совпадают; не доказана canonicalization |
-| location, workplace_type | string / unknown | Remote не означает worldwide |
-| language | string / unknown | Язык текста источника, не hiring requirement |
-| published_at, updated_at | ISO timestamp / null | Время источника; точный mapping проверить |
-| active_status | string | Наблюдаемое значение active_in_feed |
-| description | string | В E4 entity-encoded HTML; raw сохранять отдельно от представления |
-| first_seen_at | ISO timestamp | Первое обнаружение; не менять при обновлении |
-| last_seen_at | ISO timestamp | Последнее успешное наблюдение; E5, нет в старом E4 |
-
-Поля ручного CRM статуса, заметок, откликов и scoring в текущей таблице неизвестны. Не добавлять их по догадке к baseline.
+Ручные CRM-поля не принадлежат машинному payload. Фактические заголовки/типы приватной рабочей таблицы не выводятся из целевой модели. Назначение полей каталога, matching и resume package приведено ниже.
 
 ## Целевая логическая модель (предложение)
 
@@ -47,7 +46,9 @@ E4 содержит перечисленные поля; E5 добавляет l
 
 active_in_feed сохранить как legacy значение. active_confirmed, unverified, closed_confirmed, check_error из E2 — проектный enum, не доказанная state machine. Перед миграцией составить явную mapping table всех реальных значений; неизвестные значения не приводить молча к закрытым.
 
-## Инварианты
+## Целевые инварианты
+
+Это требования будущей продуктовой БД. Текущие гарантии Sheets ограничены [contracts](contracts.md); в частности, монотонная защита даты, backend user scope и атомарная транзакция ещё не реализованы.
 
 1. Повторный сбор обновляет каталог, но не first_seen_at и не ручные поля user_vacancies.
 2. last_seen_at меняется только при фактическом наблюдении конкретной вакансии в успешно обработанном ответе. Старое событие не уменьшает timestamp.

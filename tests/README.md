@@ -1,24 +1,19 @@
-# План проверок
+# Проверки JobRadar
 
-> Обновление 29.10.2026: получены экспорт и точный JS. Актуальные подтверждения, ограничения и результаты 12 тестов — [аудит экспорта](../docs/audit-workflow-export.md). Противоречащие ему утверждения ниже об отсутствии workflow/кода относятся к первоначальному срезу. Baseline gate ещё не закрыт.
+Тесты используют встроенный `node:test`, синтетические данные, локальные HTTP servers и HTML fixtures. Реальные профили/CRM не входят в тестовый набор. Матрица модуль→тест находится в [карте кода](../docs/architecture/codebase-map.md); команды окружения — в [CONTRIBUTING](../CONTRIBUTING.md).
 
-
-Runtime тесты пока не запускались: workflow и JS отсутствуют. Fixture normalized-vacancy.observed.json — сокращённая наблюдавшаяся запись E4 без description; не эталон исправленного last_seen и не схема.
-
-| Сценарий | Проверяемый результат | Уровень |
+| Набор | Что проверяет | Чего не доказывает |
 |---|---|---|
-| Повтор того же feed | Нет новых ID; last_seen обновлён; first_seen неизменен | Integration, копия Sheets |
-| Ручная заметка + новый сбор | Заметка/статус не затёрты | Integration |
-| Две boards с одинаковым job ID | Разные vacancy_id | Unit после получения JS |
-| Пустой complete feed | 0 наблюдений, без массового закрытия | Unit/integration |
-| 429/500/timeout | Run error, без ложного закрытия | Adapter |
-| Неполный/некорректный ответ | Partial/failed, не успешное отсутствие вакансий | Adapter |
-| Missing fields, HTML entities | Предсказуемый reject/unknown; безопасный вывод | Unit |
-| Повтор после частичной записи | Нет duplicate insert | Integration |
-| Старый timestamp | last_seen не откатывается | Storage |
-| Parallel run | Один writer или атомарный upsert | Integration; текущая гарантия неизвестна |
-| Remote US, English description | Нет выдуманного BG eligibility/language requirement | Matching |
-| Пользователь A → данные B | Доступ запрещён к профилю, CRM и match | Pilot authorization |
-| Restore | Credentials читаются, workflow работает на тестовой CRM | Operations |
+| `npm test` / `tests/*.test.cjs` | Нормализация, sources/pagination/errors, matching, storage preparation, workflow consistency, runner lifecycle/locks, resume packages, controlled application HTTP | Совместимость конкретного установленного n8n, production Sheets, live ATS Submit |
+| `npm run test:browser` / `browser/tests/*.test.cjs` | Controlled forms, request policy, catalog/review DOM, drafts/import/export и approval на синтетическом профиле | Правильность всех live форм, сохранность localStorage между браузерами, качество настоящего CV/PDF |
+| `npm run test:integration` | Временный workflow в локальном n8n и отдельной тестовой Sheets: insert/dedup/update, даты, ручные поля, cleanup | Долговременную стабильность scheduler, multi-user isolation и restore |
+| `npm run collector:test` | Синтетический сценарий текущего collector через локальный n8n и тестовую таблицу | Полноту live источников и работу production writer |
+| `npm run check` | ESLint, config contracts и Node-набор | Browser-тесты и живую интеграцию — они отдельные |
 
-Пакет документации проверяется на корректность JSON, локальные Markdown links, целостность ZIP и diff whitespace. Это не заменяет runtime проверки. CI для приложения добавить после получения исполнимого кода, не создавать формально зелёный pipeline без проверяемой логики.
+Точные задания — [.github/workflows](../.github/workflows). [CI](../docs/operations/ci.md) не получает секретов и не обращается к пользовательскому localhost.
+
+Выбирайте регрессию по изменяемому поведению, не копируйте реализацию в assert и не удаляйте существующий тест, чтобы скрыть сбой. Для JSON workflow проверяйте встроенный код и обе производные версии после сборки. Для browser JS/HTML одной Node-проверки недостаточно.
+
+Fixture `normalized-vacancy.observed.json` — историческая сокращённая запись; это не полная runtime schema. Новые тесты должны использовать минимальные обезличенные данные и явно отличать ошибку источника от успешного пустого результата.
+
+Числа passed/failed и SHA фиксируйте в PR/результате CI, а не в постоянно устаревающей строке README. Незапущенный тест обозначайте как незапущенный; skipped не является passed. Будущие тесты monotonic timestamps, tenant isolation и restore добавляются вместе с соответствующей реализацией, а не объявляются существующими.

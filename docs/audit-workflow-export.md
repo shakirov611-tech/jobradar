@@ -1,5 +1,7 @@
 # Аудит фактического экспорта n8n — 29.10.2026
 
+> Исторический срез исходного workflow; новые генераторы, scheduler и multi-source появились позднее. Текущее устройство — [architecture/current](architecture/current.md), статусы — [roadmap](product/roadmap.md).
+
 Статус: static/code audit + изолированные characterization tests исходного JavaScript. Это дополнение заменяет неопределённые утверждения раннего audit.md в части структуры workflow. Реальная Sheets, credentials, контейнер и резервное восстановление по-прежнему не проверены. Новый evidence E6: предоставленный пользователем JobRadar — Vacancy Collector.json. Приватный оригинал не включён в комплект.
 
 ## Подтверждённая архитектура
