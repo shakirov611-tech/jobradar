@@ -1,12 +1,12 @@
 # Текущая архитектура
 
-Основа проверена по commit `be5dafe`; Language Intelligence v1 добавлен в рабочей ветке 2026-11-04. Статус выпуска/установки ведётся в [roadmap](../product/roadmap.md), пути и тесты — в [карте кода](codebase-map.md). Это описание существующего single-user решения; [evolution](evolution.md) описывает целевую архитектуру.
+Основа проверена по commit `be5dafe`; Language Intelligence v1 добавлен 2026-11-04; opt-in hh.ru — 2026-11-05. Статус выпуска/установки ведётся в [roadmap](../product/roadmap.md), пути и тесты — в [карте кода](codebase-map.md). Это описание существующего single-user решения; [evolution](evolution.md) описывает целевую архитектуру.
 
 ## Компоненты и поток данных
 
 ```mermaid
 flowchart TD
-  ATS["Greenhouse / Lever"] --> Sources["Node: общий сбор"]
+  ATS["Greenhouse / Lever / hh.ru"] --> Sources["Node: общий сбор"]
   Config["Sources и search profile"] --> Sources
   Sources --> Language["Language analysis и кэш"]
   Language --> Match["Персональный matching"]
@@ -19,7 +19,7 @@ flowchart TD
   Facts["Приватные факты кандидата"] --> Resume
 ```
 
-- **Sources** читает публичные API, проверяет полноту/формат и формирует scoped ID. Ошибка одного источника не превращается в пустой успешный feed. Конфигурация находится в `config/sources.json`.
+- **Sources** читает опубликованные вакансии через API, проверяет формат и формирует scoped ID. Greenhouse/Lever читаются как ленты компаний; hh.ru — ограниченный поиск с отдельной загрузкой описаний и отчётом о покрытии, через токен приложения. Ошибка одного источника не превращается в пустой успешный feed. Конфигурация находится в `config/sources.json`.
 - **Language enrichment** выделяет язык публикации, обязательные/желательные требования и язык команды с evidence. Общий анализ не зависит от пользователя: rules по умолчанию, optional AI provider, кэш и ограниченные retries. **Matching** рассчитывает Language Fit отдельно по search profile, наряду с ролью, seniority и географией. Объяснения и rank boost не являются вероятностью трудоустройства. [Контракт/эксплуатация](../operations/language-intelligence.md), [ADR 015](../adr/015-language-intelligence.md).
 - **Collector** на Node собирает источники, проверяет payload, создаёт временный workflow, активирует, вызывает webhook и проверяет completion. Затем деактивирует и удаляет workflow. На неоднозначном исходе сохраняет lock для проверки человеком.
 - **Storage preparation** читает существующие ID; при вставке задаёт first_seen_at, при update не передаёт его. Google Sheets node выполняет appendOrUpdate по vacancy_id. При opt-in языковых колонок добавляется чтение записанных JSON и сверка значений; автоматическое создание колонок запрещено. Детали и ограничения — [контракты](../contracts.md).
@@ -46,7 +46,7 @@ Multi-source — обычный путь `collector:run`; legacy Airbnb сохр
 - Windows/WSL2, Docker и n8n на loopback; артефакт Compose — `infra/local/docker-compose.yml`. Там используется `n8n:stable`, а не зафиксированный digest. Нельзя считать версию установленного контейнера известной по этому тегу.
 - Windows Task Scheduler вызывает collector раз в три часа при входе пользователя. Docker/n8n должны работать; это не облачный scheduler.
 - Sheets — проекция каталога с ручными CRM-полями. n8n хранит свои credentials/state в volume; это не продуктовая БД.
-- Greenhouse/Lever — публичное чтение. Справочник endpoint/данных/retry: [source coverage](../research/source-coverage-v0.6.md#справочник-существующих-адаптеров).
+- Greenhouse/Lever — публичное чтение; hh.ru — авторизованные GET с локальными token/User-Agent, credentials не передаются в n8n. Справочник endpoint/данных/retry: [source coverage](../research/source-coverage-v0.6.md#справочник-существующих-адаптеров).
 - n8n REST API управляет временным workflow; Google Sheets node использует credential владельца. Настройка и разделение тестовых ресурсов — [integration tests](../operations/integration-tests.md).
 - GitHub Actions проверяет Node и browser fixtures. Deployment локальной установки остаётся отдельным действием; [CI](../operations/ci.md).
 

@@ -5,9 +5,15 @@ const {buildScheduledWorkflow}=require('./scheduled-workflow.cjs');
 function settings(env) {
  const root=path.resolve(__dirname,'..');
  const config=JSON.parse(fs.readFileSync(env.JR_SOURCES_FILE||path.join(root,'config/sources.json'),'utf8'));
+ if(env.JR_HH_ENABLED!==undefined) {
+  if(!['0','1'].includes(env.JR_HH_ENABLED))throw new Error('JR_INVALID_HH_ENABLED');
+  const source=config.sources?.find(s=>s.provider==='hh');
+  if(!source)throw new Error('JR_HH_SOURCE_NOT_CONFIGURED');
+  source.enabled=env.JR_HH_ENABLED==='1';
+ }
  const profile=JSON.parse(fs.readFileSync(env.JR_SEARCH_PROFILE_FILE||path.join(root,'config/search-profile.json'),'utf8'));
  validateProfile(profile);
- return {sources:validateSources(config),profile};
+ return {sources:validateSources(config),profile,hh:{token:env.JR_HH_ACCESS_TOKEN,userAgent:env.JR_HH_USER_AGENT}};
 }
 // Self-contained: embed the same validation in the n8n Code node.
 function validateEnvelope(p,expectedRunId,languageColumns=false) {
@@ -42,7 +48,13 @@ function buildMultiWorkflow(env,runId,{test=false}={}) {
 function fixtures(runId) {
  const id='9'+BigInt('0x'+runId).toString().slice(0,14);
  const uuid=runId.slice(0,8)+'-'+runId.slice(8,12)+'-'+runId.slice(12,16)+'-'+runId.slice(16,20)+'-'+runId.slice(12,24);
- return {sources:[{provider:'greenhouse',board:'airbnb',company:'JobRadar TEST',enabled:true},{provider:'lever',board:'jrfixture',region:'global',company:'JobRadar TEST',enabled:true}],loadFeed:async s=>s.provider==='greenhouse'?{jobs:[{id,title:'Product Manager',absolute_url:'https://example.test/'+runId,content:'Synthetic only',location:{name:'Remote - United States'}},{id:String(BigInt(id)+1n),title:'Director of Product',absolute_url:'https://example.test/'+runId,content:'Synthetic only',location:{name:'Remote - Europe'}},{id:String(BigInt(id)+2n),title:'Construction Project Manager',location:{name:'US'}}]}:[{id:uuid,text:'Product Owner',hostedUrl:'https://example.test/'+runId,description:'Synthetic only',workplaceType:'remote',categories:{location:'Bulgaria'}}]};
+ const sources=[{provider:'greenhouse',board:'airbnb',company:'JobRadar TEST',enabled:true},{provider:'lever',board:'jrfixture',region:'global',company:'JobRadar TEST',enabled:true},{provider:'hh',board:'search',company:'JobRadar TEST',enabled:true,search:{queries:['Product Manager'],periodDays:14,perPage:20,maxPages:1,maxVacancies:1}}];
+ const loadFeed=async s=>{
+  if(s.provider==='greenhouse')return {jobs:[{id,title:'Product Manager',absolute_url:'https://example.test/'+runId,content:'Synthetic only',location:{name:'Remote - United States'}},{id:String(BigInt(id)+1n),title:'Director of Product',absolute_url:'https://example.test/'+runId,content:'Synthetic only',location:{name:'Remote - Europe'}},{id:String(BigInt(id)+2n),title:'Construction Project Manager',location:{name:'US'}}]};
+  if(s.provider==='hh')return {jobs:[{id,name:'Менеджер продукта',description:'Synthetic only. Our team communicates in Russian.',archived:false,employer:{name:'JobRadar TEST'},area:{name:'Тестовая локация'},work_format:[{id:'REMOTE'}],alternate_url:'https://hh.ru/vacancy/'+id,published_at:'2026-01-01T12:00:00+0300'}]};
+  return [{id:uuid,text:'Product Owner',hostedUrl:'https://example.test/'+runId,description:'Synthetic only',workplaceType:'remote',categories:{location:'Bulgaria'}}];
+ };
+ return {sources,loadFeed};
 }
 async function runMulti(env,options={}) {
  const {run}=require('./run-collector.cjs');
@@ -52,7 +64,13 @@ async function runMulti(env,options={}) {
  const prepareCollection=async(runId,report)=>{
   const fixture=test?fixtures(runId):null;
   const sources=fixture?validateSources({version:1,sources:fixture.sources}):configured.sources;
-  collection=await collectSources(sources,configured.profile,{fetchImpl:options.sourceFetchImpl,loadFeed:fixture?.loadFeed,sleep:options.sleep,language});
+  collection=await collectSources(sources,configured.profile,{fetchImpl:options.sourceFetchImpl,loadFeed:fixture?.loadFeed,sleep:options.sleep,language,hh:configured.hh});
+  // Keep the existing test-sheet guard valid on subsequent runs, including legacy tests.
+  // Full HH URLs were validated by normalization; only synthetic test output uses reserved links.
+  if(test)for(const row of [...collection.rows,...collection.catalog])if(row.vacancy_id.startsWith('hh_search_')) {
+   row.original_url='https://example.test/'+runId;
+   if(Object.hasOwn(row,'canonical_url'))row.canonical_url=row.original_url;
+  }
   report.language_processing=collection.language_processing;report.language_source_priorities=collection.language_source_priorities;
   report.sourceResults=collection.sources;report.policy={workMode:'remote-evidence-v1',role:configured.profile.rolePolicy,geographyCountry:configured.profile.country,geographyExcludesFromCRM:false,matching:configured.profile.matching?.policy||'unconfigured',profileFingerprint:collection.profileFingerprint};
   const dir=options.dir||require('./run-collector.cjs').STATE;
@@ -69,7 +87,7 @@ async function runMulti(env,options={}) {
    if(actual.length!==1||actual[0].status!==expected.status||actual[0].total!==expected.total||actual[0].matched!==expected.matched||!Number.isSafeInteger(actual[0].inserted)||!Number.isSafeInteger(actual[0].updated)||actual[0].inserted<0||actual[0].updated<0||actual[0].inserted+actual[0].updated!==expected.matched)throw new Error('JR_INVALID_SOURCE_COMPLETION');
   }
   if(result.sources.reduce((n,s)=>n+s.inserted,0)!==result.inserted||result.sources.reduce((n,s)=>n+s.updated,0)!==result.updated)throw new Error('JR_INVALID_SOURCE_COMPLETION');
-  if(test&&(result.inserted!==3||result.updated!==0))throw new Error('JR_SYNTHETIC_MULTI_INSERT_FAILED');
+  if(test&&(result.inserted!==4||result.updated!==0))throw new Error('JR_SYNTHETIC_MULTI_INSERT_FAILED');
   report.sourceResults=result.sources;
   if(collection.sources.some(s=>s.status==='failed'))report.status='partial';
  };

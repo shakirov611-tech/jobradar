@@ -19,6 +19,7 @@
 | [013 Условия позиции и раздельные оценки](013-role-conditions-and-review-dimensions.md) | Accepted |
 | [014 Локальное резюме из фактов](014-local-facts-resume-review.md) | Accepted for first iteration |
 | [015 Общий языковой анализ и персональный Fit](015-language-intelligence.md) | Accepted for implementation |
+| [016 hh.ru как ограниченный поисковый источник](016-hh-search-source.md) | Accepted for implementation |
 
 Каждый ADR: контекст → решение → альтернативы → последствия → условие пересмотра. Шаблон: template.md.
 

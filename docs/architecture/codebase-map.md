@@ -1,12 +1,13 @@
 # Карта кода
 
-Основа проверена по `be5dafe`; Language v1 добавлен 2026-11-04. Имена ниже — поисковые якоря, не копия реализации. Начните со строки задачи, затем прочитайте её тесты и непосредственные зависимости. Все пути относительно корня репозитория.
+Основа проверена по `be5dafe`; Language v1 добавлен 2026-11-04, hh.ru — 2026-11-05. Имена ниже — поисковые якоря, не копия реализации. Начните со строки задачи, затем прочитайте её тесты и непосредственные зависимости. Все пути относительно корня репозитория.
 
 ## Основные модули
 
 | Задача / ответственность | Файлы и интерфейсы | Зависимости | Связанные тесты |
 |---|---|---|---|
-| Добавить источник, исправить API/ID/pagination | `src/sources/catalog.cjs`: validateSources, sourceId, feedUrl, fetchFeed, normalizeFeed, collectSources; `config/sources.json` | matching/profile, role-and-geography, personal-match; Node fetch/crypto | `tests/multi-source.test.cjs`, `tests/personal-match.test.cjs` |
+| Добавить источник, исправить API/ID/pagination | `src/sources/catalog.cjs`: validateSources, sourceId, feedUrl, fetchFeed, normalizeFeed, collectSources; `config/sources.json` | matching/profile, role-and-geography, personal-match; Node fetch/crypto | `tests/multi-source.test.cjs`, `tests/hh-source.test.cjs`, `tests/personal-match.test.cjs` |
+| hh.ru: поиск, details, auth, лимиты | `src/sources/hh.cjs`: validateHHSource, searchUrl, fetchHH, validateJob, workplaceType; `http.cjs`: getJson | catalog; только Node GET; настройки через multi-collector.settings(env) | `tests/hh-source.test.cjs`, `browser/tests/catalog-preview.test.cjs` |
 | Исправить remote/страну/роль | `src/matching/role-and-geography.cjs`: classifyRole, classifyWorkMode, classifyGeography, descriptionText | Профиль поиска; используется sources и personal-match | `tests/remote-policy.test.cjs`, `tests/multi-source.test.cjs`, `tests/personal-match.test.cjs` |
 | Языковое enrichment / cache / AI | `src/language/contract.cjs`: SCHEMA, validateAnalysis; `rules.cjs`: analyzeRules; `analyzer.cjs`: languageInput, createAnalyzer, createOpenAIProvider, createMockProvider; `prompt.cjs`: PROMPT_VERSION; `config/language-analysis.json` | Только vacancy input; Node fs/crypto/fetch; без candidate profile | `tests/language-intelligence.test.cjs` |
 | Language Fit / source priorities / ручная поправка | `src/language/personalize.cjs`: languageFit, sourcePriorities; `scripts/language-runtime.cjs`: languageRuntime; `presentation.cjs`: languageSummary; `sheets.cjs`: configureLanguageSheets, verifyLanguageRows | Search profile; shared analysis; приватный override; collector/preview и auto-map n8n | `tests/language-intelligence.test.cjs`, `browser/tests/language-review.test.cjs` |
@@ -29,7 +30,7 @@
 
 | Область задачи | Читать при необходимости |
 |---|---|
-| Источники и внешние API | [Справочник адаптеров](../research/source-coverage-v0.6.md#справочник-существующих-адаптеров), ADR [010](../adr/010-multi-source-catalog.md) |
+| Источники и внешние API | [Справочник адаптеров](../research/source-coverage-v0.6.md#справочник-существующих-адаптеров), ADR [010](../adr/010-multi-source-catalog.md), [016](../adr/016-hh-search-source.md) |
 | Writer / данные | [Контракты](../contracts.md), [модель](../data-model.md), [integration setup](../operations/integration-tests.md), ADR [004](../adr/004-identity.md), [007](../adr/007-local-scheduled-writer.md) |
 | Matching / UI review | [Инструкция](../operations/matching-v0.7.md), ADR [011](../adr/011-confirmed-remote-main-view.md), [012](../adr/012-explainable-matching-review.md), [013](../adr/013-role-conditions-and-review-dimensions.md) |
 | Language Intelligence | [Контракт и операции](../operations/language-intelligence.md), ADR [015](../adr/015-language-intelligence.md) |

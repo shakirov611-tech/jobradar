@@ -13,6 +13,7 @@
 | Понять компоненты и границы | [Текущая архитектура](docs/architecture/current.md) |
 | Узнать следующий этап | [Roadmap](docs/product/roadmap.md), [backlog](docs/product/backlog.md) |
 | Запустить локальный сбор | [Multi-source collector](docs/operations/multi-source-v0.6.md), [расписание Windows](docs/operations/scheduled-collector-v0.5.md) |
+| Подключить hh.ru | [Настройка источника](docs/operations/multi-source-v0.6.md#подключение-hhru) |
 | Посмотреть подбор и оценить его | [Matching review](docs/operations/matching-v0.7.md), [remote view](docs/operations/remote-view-v0.6.1.md) |
 | Настроить языки и включить языковые поля CRM | [Language Intelligence](docs/operations/language-intelligence.md) |
 | Подготовить резюме | [Локальные факты и review](docs/operations/resume-preparation.md) |

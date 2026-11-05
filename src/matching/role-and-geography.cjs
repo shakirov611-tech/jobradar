@@ -2,8 +2,8 @@ const GEOGRAPHY_POLICY='remote-bg-v2';
 function classifyRole(title) {
   const t=String(title||'').replace(/[–—_/,&()-]+/g,' ').replace(/\s+/g,' ').trim();
   if(/\b(?:project|program) manager\b/i.test(t)&&/\b(?:construction|civil|building site)\b/i.test(t))return {matched:false,reason:'non_software_project_role'};
-  if(/\bproduct (?:marketing|design(?:er)?|analyst|analytics)\b/i.test(t))return {matched:false,reason:'adjacent_product_function'};
-  if(/\b(?:product (?:manager|owner|lead)|(?:head|director|vp|vice president|chief) (?:of )?product|product management|growth product|monetization manager)\b/i.test(t)||/продакт|менеджер(?:\s+по)?\s+продукт|владелец\s+продукт|руководитель\s+продукт/iu.test(t))return {matched:true,reason:'product_role'};
+  if(/\bproduct (?:marketing|design(?:er)?|analyst|analytics)\b/i.test(t)||/продакт\s+(?:дизайн|маркет|аналит)|продуктов[а-яё]*\s+(?:дизайн|аналит|маркет)/iu.test(t))return {matched:false,reason:'adjacent_product_function'};
+  if(/\b(?:product (?:manager|owner|lead)|(?:head|director|vp|vice president|chief) (?:of )?product|product management|growth product|monetization manager)\b/i.test(t)||/продакт|менеджер(?:\s+по)?\s+продукт|владелец\s+продукт|(?:руководитель|директор)(?:\s+по)?\s+продукт/iu.test(t))return {matched:true,reason:'product_role'};
   if(/\b(?:head of growth|growth manager|growth lead)\b/i.test(t))return {matched:true,reason:'growth_scope_needs_review'};
   if(/\b(?:project|delivery|program) manager\b/i.test(t)||/руководитель\s+проект/iu.test(t))return {matched:true,reason:/\b(?:technical|software|digital|platform|IT|agile|engineering)\b/i.test(t)?'technical_delivery_role':'delivery_domain_needs_review'};
   return {matched:false,reason:'outside_current_role_policy'};
