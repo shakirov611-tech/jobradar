@@ -11,3 +11,16 @@ test('catalog HTML filters raw/role/geography views without running upstream mar
  await page.getByLabel('Роли').selectOption('yes');assert.equal(await page.locator('#visible').textContent(),'Показано: 0');
  await page.getByLabel('География').selectOption('all');await page.getByLabel('Поиск').fill('Bulgaria');assert.equal(await page.locator('#visible').textContent(),'Показано: 1');
 });
+test('HH preview shows bounded coverage, employer and original link with language analysis',async t=>{
+ const fixture=require('../../tests/fixtures/hh-vacancy.json');
+ const source=require('../../config/sources.json').sources.find(s=>s.provider==='hh');
+ const {collectSources}=require('../../src/sources/catalog.cjs');
+ const c=await collectSources([source],require('../../config/search-profile.json'),{loadFeed:async()=>({jobs:[fixture],coverage:{period_days:14,complete:false,unavailable:1,archived:0}})});
+ const browser=await chromium.launch({headless:true});t.after(()=>browser.close());const page=await browser.newPage();
+ await page.setContent(renderCatalog(c));
+ assert.ok((await page.locator('body').textContent()).includes('Поиск за 14 дн. · неполная выборка · 1 недоступны'));
+ assert.equal(await page.locator('#jobs tr').count(),1);assert.ok((await page.locator('#jobs tr').textContent()).includes(fixture.employer.name));
+ assert.equal(await page.locator('#jobs a').getAttribute('href'),fixture.alternate_url);
+ assert.ok((await page.locator('#jobs .language-summary').textContent()).includes('Язык команды: русский — подтверждено'));
+ assert.equal(await page.locator('#visible').textContent(),'Показано: 1');
+});

@@ -71,7 +71,7 @@ function fakeApi({mismatch=false}={}) {
 const upstream=async(url,options)=>{assert.equal(options.method,'GET');assert.equal(Object.hasOwn(options.headers,'X-N8N-API-KEY'),false);return {ok:true,json:async()=>url.includes('lever.co')?[lj]:{jobs:[job]}};};
 test('multi runner writes configured sources under existing lock and persists full catalog, no test writes to production',async t=>{
  const dir=temp(t),api=fakeApi();const r=await runMulti(env,{dir,fetchImpl:api.fetchImpl,sourceFetchImpl:upstream});assert.equal(r.status,'passed');assert.equal(r.sourceResults.length,settings({}).sources.length);assert.equal(status(dir).lock,null);assert.ok(fs.existsSync(path.join(dir,r.catalogFile)));assert.ok(fs.existsSync(path.join(dir,'preview.html')));assert.equal(r.counts.matched,r.sourceResults.length);
- const testApi=fakeApi();const tr=await runMulti(env,{dir,fetchImpl:testApi.fetchImpl,test:true,sourceFetchImpl:async()=>{throw Error('test must not call upstream');}});assert.equal(tr.status,'passed');assert.equal(tr.counts.inserted,3);assert.ok(testApi.payload.rows.every(x=>x.company==='JobRadar TEST'&&x.original_url.startsWith('https://example.test/')));
+ const testApi=fakeApi();const tr=await runMulti(env,{dir,fetchImpl:testApi.fetchImpl,test:true,sourceFetchImpl:async()=>{throw Error('test must not call upstream');}});assert.equal(tr.status,'passed');assert.equal(tr.counts.inserted,4);assert.ok(testApi.payload.rows.every(x=>x.company==='JobRadar TEST'&&x.original_url.startsWith('https://example.test/')));
  assert.equal(status(dir).lastSuccessfulProduction.runId,r.runId);
 });
 test('partial source outage confirms successful writes, releases lock and preserves previous full success',async t=>{

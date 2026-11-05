@@ -52,6 +52,27 @@
       "company": "Superside",
       "region": "global",
       "enabled": true
+    },
+    {
+      "provider": "hh",
+      "board": "search",
+      "company": "hh.ru",
+      "enabled": false,
+      "disabled_reason": "Requires local JR_HH_ENABLED=1, access token and app contact header; see source runbook",
+      "search": {
+        "queries": [
+          "Product Manager",
+          "Product Owner",
+          "Head of Product",
+          "продакт",
+          "менеджер продукта",
+          "директор по продукту"
+        ],
+        "periodDays": 14,
+        "perPage": 20,
+        "maxPages": 2,
+        "maxVacancies": 60
+      }
     }
   ]
 }

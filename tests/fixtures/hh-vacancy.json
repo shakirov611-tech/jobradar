@@ -1,0 +1,13 @@
+{
+  "id": "910001",
+  "name": "Senior Product Manager",
+  "description": "<p>This role is fully remote.</p><p>Our team communicates in Russian.</p><p>English is a plus.</p>",
+  "archived": false,
+  "employer": {"id": "920001", "name": "JobRadar Synthetic Employer"},
+  "area": {"id": "1", "name": "Москва"},
+  "work_format": [{"id": "REMOTE", "name": "Удалённо"}],
+  "schedule": {"id": "fullDay", "name": "Полный день"},
+  "alternate_url": "https://hh.ru/vacancy/910001",
+  "published_at": "2026-11-01T12:00:00+0300",
+  "languages": [{"id": "rus", "name": "Русский", "level": {"id": "l1", "name": "Родной"}}]
+}

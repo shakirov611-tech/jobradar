@@ -1,4 +1,4 @@
-# Multi-source collector v0.6
+# Multi-source collector
 
 Статус: код, изолированные тесты и read-only live preview; новый n8n write path
 нужно подтвердить локальной синтетической проверкой перед рабочим запуском.
@@ -15,7 +15,7 @@ npm.cmd run collector:automate
 ```
 
 Команда использует прежние ключи. Сначала новый writer получает синтетический payload
-двух провайдеров: 4 записи входа, 3 ролевых кандидата, 3 вставки в отдельную тестовую
+трёх провайдеров (Greenhouse, Lever, HH): 5 записей входа, 4 ролевых кандидата, 4 вставки в отдельную тестовую
 таблицу; строительный Project Manager исключён. Guard тестовой таблицы сохраняется.
 Никаких реальных ATS запросов из test mode нет. При успешном тесте переустанавливается
 прежняя Windows task: первый production run примерно через минуту, далее каждые 3 часа.
@@ -40,8 +40,8 @@ npm.cmd run collector:status
 npm.cmd run collector:preview -- --open
 ```
 
-Это только public GET: n8n/Sheets не вызываются. CLI загружает `.env.integration`
-для optional config paths, но не отправляет его ключи ATS. Обзор автоматически
+Это только GET опубликованных вакансий: n8n/Sheets не вызываются. CLI загружает `.env.integration`
+для optional config paths и credentials. Только HH получает свой JR_HH_ACCESS_TOKEN; n8n/Google credentials не отправляются источникам. Обзор автоматически
 открывается в Windows и сохраняется в `.collector-state/preview.html`.
 Для чтения public configs без env-файла: `node scripts/preview-sources.cjs`.
 
@@ -60,10 +60,9 @@ run или collector:preview заменяет его реальным. Catalog �
 
 ## Конфигурация
 
-`config/sources.json`: provider greenhouse/lever, board token, отображаемая company,
+`config/sources.json`: provider greenhouse/lever/hh, board token, отображаемая company,
 enabled; для Lever region global/eu. URL строится кодом, произвольные endpoints и
-credentials не принимаются. Disabled entries — проверенные неработающие/пустые boards,
-а не активные источники. Активных источников может быть 1–8, source IDs уникальны.
+credentials не принимаются. Disabled entries не читаются: причина может быть историческим отказом board или отсутствием локальной настройки HH. Активных источников может быть 1–8, source IDs уникальны.
 До добавления board проверьте официальный careers link и read-only результат.
 
 `config/search-profile.json`: страна BG, remote preference, версия role policy,
@@ -88,7 +87,7 @@ collector:automate / collector:run. Они не требуют ручного с
   или schema error отбрасывают источник целиком; остальные продолжаются.
 - Пустой успешный board отличается от ошибки. total означает сумму по успешным boards,
   а не оценку числа вакансий в недоступном источнике. matched — ролевой prefilter,
-  не число персонально подходящих вакансий. roleReview выделяет неоднозначные роли.
+  не число персонально подходящих вакансий. HH total считает загруженные неархивные details; coverage отдельно показывает ограничение поиска. roleReview выделяет неоднозначные роли.
 - Identity: greenhouse_<board>_<id>; для Airbnb прежний greenhouse_airbnb_<id> неизменен.
   Lever global: lever_<board>_<uuid>; EU: lever_eu_<board>_<uuid>. ID не глобален между
   компаниями/ATS. Semantic dedup одной должности в нескольких location posts не выполнен.
@@ -96,17 +95,43 @@ collector:automate / collector:run. Они не требуют ручного с
   живут в HTML/JSON отчёте; география не отсекает CRM и не пишет ручные CRM поля.
 - Role policy добавляет Director/VP of Product и Head of Growth; исключает строительные
   Project Manager и смежные product marketing/design/analytics. Generic Growth и
-  Project/Delivery остаются кандидатами с review. Это не полноценный персональный matching;
-  seniority, зарплата, домен, язык и опыт пока не оцениваются.
+  Project/Delivery остаются кандидатами с review. Текущее персональное ранжирование и язык описаны в [matching](matching-v0.7.md) и [language](language-intelligence.md).
 - BG/worldwide дают только plausible; Europe/EMEA/remote — review, а не доказанную
   доступность найма. Явные US/Canada/UK location indications и onsite preference
-  conflicts помечаются restricted. Анализ ограничен структурной location/workplace,
-  не читает все оговорки описания и не подтверждает work authorization/язык команды.
+  conflicts помечаются restricted. Анализ использует также отдельные правила текста описания, но не все оговорки (особенно RU) и не подтверждает work authorization.
 - Старые строки, которые новый role prefilter не выбрал, не удаляются и не закрываются;
   их last_seen не растёт. Полная reconciliation источника и CRM availability — отдельная задача.
 - Payload rows ограничен 8 MiB до отправки в n8n. До записи проверяются run ID,
   принадлежность источнику, totals, дубликаты, timestamp и владение полями. notes/review_status
   и входной first_seen не допускаются. First_seen helper и auto-map writer сохранены.
+
+## Подключение hh.ru
+
+HH-01 добавлен после v0.8.0 и включается отдельно; без настройки прежние источники продолжают работать. Детали API/полей/бюджетов — [справочник](../research/source-coverage-v0.6.md#hhru-search-и-details). Это сбор вакансий, без авторизации соискателя, резюме HH и откликов.
+
+1. Зарегистрируйте приложение на [dev.hh.ru](https://dev.hh.ru/) и получите **access_token приложения** по официальной [инструкции](https://github.com/hhru/api/blob/master/docs/authorization_for_application.md). JobRadar ожидает готовый токен; получение/refresh в этой итерации не автоматизированы. Не публикуйте client_secret/token и не отправляйте их в чат.
+2. В существующую `.env.integration` добавьте `JR_HH_ACCESS_TOKEN` и `JR_HH_USER_AGENT` с названием/версией приложения и вашим действительным email. Пример синтаксиса — `.env.integration.example`. Пока оставьте HH disabled; `JR_HH_ENABLED=1` будет постоянным включением для расписания.
+3. После обновления файлов выполните локальный synthetic writer test, затем read-only preview с HH только в текущем PowerShell:
+
+```powershell
+cd "C:\Projects\jobradar-main\jobradar-main"
+npm.cmd run collector:test
+$env:JR_HH_ENABLED = "1"
+npm.cmd run collector:preview -- --open
+Remove-Item Env:JR_HH_ENABLED
+```
+
+`collector:test` использует только фикстуры и отдельную JR_TEST таблицу, токен HH ему не нужен. После нормализации synthetic HH-ссылки заменяются на example.test, чтобы прежний guard тестовой таблицы принимал следующие запуски. Успех: status passed, cleanup completed, inserted 4. Реального n8n из облака не проверяли; этот запуск подтверждает локальную запись. Не продолжайте после ошибки writer, сначала проверьте её отчёт.
+
+Preview не пишет в Sheets. Проверьте строку hh.ru, работодателей и ссылки вакансий, языковые пояснения и колонку покрытия. «Неполная выборка» означает лимит поиска/изменение выдачи/недоступные details; это не весь рынок. Москва в location не подтверждает и не отрицает возможность работы из BG. Неизвестные условия требуют review; язык сайта не подтверждает язык команды.
+
+4. После проверки добавьте `JR_HH_ENABLED=1` в `.env.integration`. Существующее расписание прочтёт настройку при следующем запуске; переустанавливать его и нажимать Execute не нужно. При необходимости разовый запуск — `npm.cmd run collector:run`, статус — `npm.cmd run collector:status`. Не запускайте writer параллельно из другого каталога.
+
+Новые n8n nodes, credentials и столбцы для HH не нужны: API читает Node, прежний writer автоматически сопоставляет машинные поля. `.env.integration`, `.collector-state` и приватные профили сохраняются при обновлении. Legacy `collector:setup` / `collector:run:legacy` не собирают HH.
+
+Отключение без удаления данных: `JR_HH_ENABLED=0` в env. Для других запросов/лимитов используйте `search` единственного `hh/search` entry; личный config можно хранить через `JR_SOURCES_FILE`. Не добавляйте отдельные HH entries для каждого query и не меняйте board, иначе нарушится единый scope ID.
+
+Диагностика: `JR_HH_ACCESS_TOKEN_REQUIRED` / `JR_HH_USER_AGENT_REQUIRED` — локальные настройки; HTTP 401/403 — токен, доступ приложения или ограничение HH, без автоматического обхода; 429 — отложите следующий запрос; `JR_SOURCE_DEADLINE` — общий бюджет времени; `JR_HH_INVALID_*` — конфиг или несовместимый ответ. Ошибка HH сохраняет успешные источники как partial, не закрывает старые вакансии. Успешный тест на mocks не подтверждает разрешения приложения и live-качество выборки.
 
 ## Откат без удаления вакансий
 

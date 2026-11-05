@@ -155,7 +155,7 @@ test('collector test integrates language JSON and synthetic-only path under n8n 
  const dir=temp(t);let payload,workflow;
  const fetchImpl=async(url,o)=>{const response=v=>({ok:true,status:200,json:async()=>v});if(url.endsWith('/api/v1/workflows')&&o.method==='POST'){workflow=JSON.parse(o.body);return response({id:'fixture'});}if(url.includes('/webhook/')){payload=JSON.parse(o.body);return response({ok:true,runId:payload.runId,total:payload.total,matched:payload.rows.length,inserted:payload.rows.length,updated:0,sources:payload.sources.map(s=>({...s,inserted:s.matched,updated:0}))});}return response({data:[]});};
  const r=await runMulti({...env,JR_LANGUAGE_SHEETS:'1'},{dir,test:true,fetchImpl,sourceFetchImpl:()=>{throw Error('live not allowed');}});
- assert.equal(r.status,'passed');assert.equal(r.cleanup,'completed');assert.equal(payload.rows.length,3);for(const row of payload.rows){assert.equal(JSON.parse(row.language_analysis).language_analysis_version,'language-v1');assert.ok(JSON.parse(row.language_fit).profile_fingerprint);}
+ assert.equal(r.status,'passed');assert.equal(r.cleanup,'completed');assert.equal(payload.rows.length,4);for(const row of payload.rows){assert.equal(JSON.parse(row.language_analysis).language_analysis_version,'language-v1');assert.ok(JSON.parse(row.language_fit).profile_fingerprint);}
  assert.ok(workflow.nodes.some(n=>n.name==='Verify language result'));
 });
 test('HTML presents ordinal evidence and requirements, never fabricated probabilities',async()=>{
